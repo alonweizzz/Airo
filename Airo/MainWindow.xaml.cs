@@ -1,8 +1,27 @@
 using System.Windows;
+using System.IO;
+using System.Windows.Media.Imaging;
 namespace Airo;
 public partial class MainWindow : Window
 {
-    public MainWindow() => InitializeComponent();
+    public MainWindow() { InitializeComponent(); LoadBrandLogo(); }
+    private void LoadBrandLogo()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "Assets", "AiroLogo.png");
+        if (!File.Exists(path)) return;
+        try
+        {
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.UriSource = new Uri(path, UriKind.Absolute);
+            bitmap.EndInit();
+            BrandLogo.Source = bitmap;
+            BrandLogo.Visibility = Visibility.Visible;
+            LogoFallback.Visibility = Visibility.Collapsed;
+        }
+        catch (Exception) { /* Keep fallback. */ }
+    }
     private void Home_Click(object sender, RoutedEventArgs e) { }
     private void Devices_Click(object sender, RoutedEventArgs e) =>
         MessageBox.Show("AirPlay receiver integration is coming next.\n\nWhen available, connect your iPhone and PC to the same Wi-Fi network, open Control Center → Screen Mirroring and choose Airo.", "Connect a device", MessageBoxButton.OK, MessageBoxImage.Information);
