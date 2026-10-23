@@ -8,6 +8,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using Forms = System.Windows.Forms;
+using MessageBox = System.Windows.MessageBox;
+using Brushes = System.Windows.Media.Brushes;
+using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 
 namespace Airo;
 public partial class MainWindow : Window
