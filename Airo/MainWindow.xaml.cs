@@ -57,7 +57,7 @@ public partial class MainWindow : Window
         }
         catch { }
     }
-    private void UpdateStatus(string status, Brush color)
+    private void UpdateStatus(string status, System.Windows.Media.Brush color)
     {
         ReceiverStatus.Text = status;
         ReceiverDot.Fill = color;
