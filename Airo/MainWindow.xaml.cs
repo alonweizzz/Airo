@@ -27,12 +27,23 @@ public partial class MainWindow : Window
     private IntPtr _embeddedWindow;
     private readonly Forms.Panel _videoPanel = new() { BackColor = System.Drawing.Color.Black };
     private int _launchId;
+    private bool _wideLayout;
 
     public MainWindow()
     {
         InitializeComponent();
         VideoHost.Child = _videoPanel;
         _videoPanel.Resize += (_, _) => ResizeVideo();
+        DisplaySurface.SizeChanged += (_, _) => UpdateVideoLayout();
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == System.Windows.Input.Key.F6)
+            {
+                _wideLayout = !_wideLayout;
+                UpdateVideoLayout();
+                e.Handled = true;
+            }
+        };
         LoadBrandLogo();
         _receiverPath = LoadReceiverPath();
         Closed += (_, _) => StopReceiver();
@@ -64,6 +75,16 @@ public partial class MainWindow : Window
     {
         ReceiverStatus.Text = status;
         ReceiverDot.Fill = color;
+    }
+    private void UpdateVideoLayout()
+    {
+        // The iPhone is portrait in most sessions. Keep its host centered instead
+        // of stretching the native receiver window across a widescreen canvas.
+        var availableWidth = Math.Max(100, DisplaySurface.ActualWidth - 24);
+        var availableHeight = Math.Max(100, DisplaySurface.ActualHeight - 24);
+        VideoHost.Width = _wideLayout ? availableWidth : Math.Min(availableWidth, availableHeight * 0.58);
+        VideoHost.Height = availableHeight;
+        ResizeVideo();
     }
     private void ResizeVideo()
     {
@@ -132,6 +153,7 @@ public partial class MainWindow : Window
             {
                 VideoHost.Visibility = Visibility.Visible;
                 EmptyState.Visibility = Visibility.Collapsed;
+                UpdateVideoLayout();
                 _videoPanel.CreateControl();
                 var style = GetWindowLongPtr(hwnd, GWL_STYLE).ToInt64();
                 var childStyle = (style | WS_CHILD) & ~(WS_POPUP | WS_CAPTION | WS_THICKFRAME);
@@ -139,7 +161,7 @@ public partial class MainWindow : Window
                 SetParent(hwnd, _videoPanel.Handle);
                 _embeddedWindow = hwnd;
                 ResizeVideo();
-                UpdateStatus("Receiver window embedded", Brushes.LightGreen);
+                UpdateStatus("Receiver embedded · F6 layout", Brushes.LightGreen);
                 return;
             }
             catch (Exception ex)
@@ -180,7 +202,7 @@ public partial class MainWindow : Window
         MessageBox.Show("Screenshots and recording are planned for a later beta.", "Capture");
     private void Settings_Click(object sender, RoutedEventArgs e)
     {
-        if (MessageBox.Show("Change the saved UxPlay executable?", "Receiver settings", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+        if (MessageBox.Show("Change the saved UxPlay executable?\n\nTip: Press F6 during mirroring to switch between portrait and wide layouts.", "Receiver settings", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             SelectReceiver();
     }
     private void About_Click(object sender, RoutedEventArgs e) =>
