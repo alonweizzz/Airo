@@ -7,7 +7,7 @@ public partial class MainWindow : Window
     public MainWindow() { InitializeComponent(); LoadBrandLogo(); }
     private void LoadBrandLogo()
     {
-        var path = Path.Combine(AppContext.BaseDirectory, "Assets", "AiroLogo.png");
+        var path = Path.Combine(AppContext.BaseDirectory, "assets", "AiroLogo.png");
         if (!File.Exists(path)) return;
         try
         {
