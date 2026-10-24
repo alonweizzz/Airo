@@ -249,8 +249,8 @@ public partial class MainWindow : Window
     private static bool IsRunning(Process process)
     {
         try { return !process.HasExited; }
+        // ObjectDisposedException derives from InvalidOperationException.
         catch (InvalidOperationException) { return false; }
-        catch (ObjectDisposedException) { return false; }
     }
     private async Task AttachWhenReady(Process process, int launch)
     {
