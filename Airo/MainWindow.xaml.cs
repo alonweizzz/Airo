@@ -19,6 +19,8 @@ public partial class MainWindow : Window
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW", SetLastError = true)] private static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW", SetLastError = true)] private static extern IntPtr SetWindowLongPtr(IntPtr hwnd, int index, IntPtr value);
     [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool MoveWindow(IntPtr hwnd, int x, int y, int width, int height, bool repaint);
+    [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool SetWindowPos(IntPtr hwnd, IntPtr insertAfter, int x, int y, int cx, int cy, uint flags);
+    private const uint SWP_NOZORDER = 0x0004, SWP_NOACTIVATE = 0x0010, SWP_FRAMECHANGED = 0x0020, SWP_SHOWWINDOW = 0x0040;
     private const int GWL_STYLE = -16;
     private const long WS_CHILD = 0x40000000, WS_POPUP = unchecked((int)0x80000000), WS_CAPTION = 0x00C00000, WS_THICKFRAME = 0x00040000;
 
@@ -28,6 +30,9 @@ public partial class MainWindow : Window
     private readonly Forms.Panel _videoPanel = new() { BackColor = System.Drawing.Color.Black };
     private int _launchId;
     private bool _wideLayout;
+    // iPhone portrait screens are taller than 9:16; use a closer 9:19.5 viewport.
+    private const double PortraitAspect = 9.0 / 19.5;
+    private const double LandscapeAspect = 16.0 / 9.0;
 
     public MainWindow()
     {
@@ -78,18 +83,28 @@ public partial class MainWindow : Window
     }
     private void UpdateVideoLayout()
     {
-        // The iPhone is portrait in most sessions. Keep its host centered instead
-        // of stretching the native receiver window across a widescreen canvas.
-        var availableWidth = Math.Max(100, DisplaySurface.ActualWidth - 24);
-        var availableHeight = Math.Max(100, DisplaySurface.ActualHeight - 24);
-        VideoHost.Width = _wideLayout ? availableWidth : Math.Min(availableWidth, availableHeight * 0.58);
-        VideoHost.Height = availableHeight;
+        // Fit the complete receiver viewport without stretching it or cropping.
+        // WPF measures in device-independent pixels; WinForms handles native pixels.
+        var width = Math.Max(1, DisplaySurface.ActualWidth - 24);
+        var height = Math.Max(1, DisplaySurface.ActualHeight - 24);
+        var aspect = _wideLayout ? LandscapeAspect : PortraitAspect;
+        var fittedWidth = Math.Min(width, height * aspect);
+        var fittedHeight = fittedWidth / aspect;
+        VideoHost.Width = fittedWidth;
+        VideoHost.Height = fittedHeight;
         ResizeVideo();
     }
     private void ResizeVideo()
     {
-        if (_embeddedWindow != IntPtr.Zero)
-            MoveWindow(_embeddedWindow, 0, 0, _videoPanel.ClientSize.Width, _videoPanel.ClientSize.Height, true);
+        if (_embeddedWindow == IntPtr.Zero || _videoPanel.IsDisposed) return;
+        var width = _videoPanel.ClientSize.Width;
+        var height = _videoPanel.ClientSize.Height;
+        if (width <= 0 || height <= 0) return;
+        // Tell the external renderer about the *actual native client size*.
+        // SWP_FRAMECHANGED forces the native child to recalculate its non-client
+        // geometry after its caption/borders have been removed.
+        SetWindowPos(_embeddedWindow, IntPtr.Zero, 0, 0, width, height,
+            SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
     }
     private void Home_Click(object sender, RoutedEventArgs e) { }
     private async void Devices_Click(object sender, RoutedEventArgs e)
@@ -158,10 +173,13 @@ public partial class MainWindow : Window
                 var style = GetWindowLongPtr(hwnd, GWL_STYLE).ToInt64();
                 var childStyle = (style | WS_CHILD) & ~(WS_POPUP | WS_CAPTION | WS_THICKFRAME);
                 SetWindowLongPtr(hwnd, GWL_STYLE, new IntPtr(childStyle));
-                SetParent(hwnd, _videoPanel.Handle);
+                var previousParent = SetParent(hwnd, _videoPanel.Handle);
+                if (previousParent == IntPtr.Zero && Marshal.GetLastWin32Error() != 0)
+                    throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), "Could not attach receiver window");
                 _embeddedWindow = hwnd;
+                UpdateVideoLayout();
                 ResizeVideo();
-                UpdateStatus("Receiver embedded · F6 layout", Brushes.LightGreen);
+                UpdateStatus("Receiver embedded · F6 rotate layout", Brushes.LightGreen);
                 return;
             }
             catch (Exception ex)
