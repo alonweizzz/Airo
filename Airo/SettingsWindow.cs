@@ -18,6 +18,7 @@ public sealed class SettingsWindow : Wpf.Window
     private readonly Controls.Button _portraitButton;
     private readonly Controls.Button _wideButton;
     private bool _wideLayout;
+    private readonly Controls.ComboBox _videoProfile;
 
     public AiroSettings? SavedSettings { get; private set; }
 
@@ -314,6 +315,34 @@ public sealed class SettingsWindow : Wpf.Window
         _wideButton.Click += (_, _) => { _wideLayout = true; RefreshLayoutButtons(); };
         _wideLayout = current.WideLayout;
         RefreshLayoutButtons();
+
+        // Receiver options are opt-in: the tested command line remains the default.
+        var performanceCard = Card();
+        body.Children.Add(performanceCard);
+        var performance = Section(performanceCard, "\uE7F4", "Video performance (experimental)",
+            "These settings apply when you next start the receiver. Results depend on your UxPlay build and iPhone.");
+        _videoProfile = new Controls.ComboBox
+        {
+            Height = 42,
+            Background = Paint("#142B47"),
+            Foreground = Paint("#101A2A"),
+            BorderBrush = Paint("#547DA4"),
+            BorderThickness = new Wpf.Thickness(1),
+            Padding = new Wpf.Thickness(10, 5, 10, 5)
+        };
+        _videoProfile.Items.Add("Balanced — current stable behavior");
+        _videoProfile.Items.Add("Smooth — request up to 60 FPS");
+        _videoProfile.Items.Add("Responsive — try lower display latency");
+        _videoProfile.SelectedIndex = current.VideoProfile switch
+        {
+            "Smooth" => 1,
+            "Responsive" => 2,
+            _ => 0
+        };
+        performance.Children.Add(_videoProfile);
+        var performanceNote = Text("Smooth requests -fps 60 with timestamp synchronization. Responsive uses -vsync no; this may affect audio/video sync. If playback becomes worse, select Balanced.", 11, false, MutedText);
+        performanceNote.Margin = new Wpf.Thickness(0, 10, 0, 0);
+        performance.Children.Add(performanceNote);
     }
 
     private void RefreshLayoutButtons()
@@ -333,7 +362,13 @@ public sealed class SettingsWindow : Wpf.Window
             ReceiverPath = _receiverPath.Text.Trim(),
             StartMaximized = _startMaximized.IsChecked == true,
             AlwaysOnTop = _alwaysOnTop.IsChecked == true,
-            WideLayout = _wideLayout
+            WideLayout = _wideLayout,
+            VideoProfile = _videoProfile.SelectedIndex switch
+            {
+                1 => "Smooth",
+                2 => "Responsive",
+                _ => "Balanced"
+            }
         };
         try { next.Save(); }
         catch (Exception ex)
