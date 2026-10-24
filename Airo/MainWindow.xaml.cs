@@ -24,6 +24,7 @@ public partial class MainWindow : Window
     private const int GWL_STYLE = -16;
     private const long WS_CHILD = 0x40000000, WS_POPUP = unchecked((int)0x80000000), WS_CAPTION = 0x00C00000, WS_THICKFRAME = 0x00040000;
 
+    private AiroSettings _settings = AiroSettings.Load();
     private Process? _receiver;
     private string? _receiverPath;
     private IntPtr _embeddedWindow;
@@ -50,14 +51,16 @@ public partial class MainWindow : Window
             }
         };
         LoadBrandLogo();
-        _receiverPath = LoadReceiverPath();
+        _receiverPath = _settings.ReceiverPath;
+        _wideLayout = _settings.WideLayout;
+        Topmost = _settings.AlwaysOnTop;
+        Loaded += (_, _) =>
+        {
+            if (_settings.StartMaximized) WindowState = System.Windows.WindowState.Maximized;
+            if (_settings.AutoStartReceiver && File.Exists(_receiverPath))
+                Devices_Click(this, new RoutedEventArgs());
+        };
         Closed += (_, _) => StopReceiver();
-    }
-    private static string ConfigPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Airo", "receiver-path.txt");
-    private static string? LoadReceiverPath()
-    {
-        try { return File.Exists(ConfigPath) ? File.ReadAllText(ConfigPath).Trim() : null; }
-        catch { return null; }
     }
     private void LoadBrandLogo()
     {
@@ -212,16 +215,28 @@ public partial class MainWindow : Window
         var dialog = new OpenFileDialog { Title = "Choose your installed UxPlay EXE", Filter = "Applications (*.exe)|*.exe", CheckFileExists = true };
         if (dialog.ShowDialog(this) != true) return;
         _receiverPath = dialog.FileName;
-        Directory.CreateDirectory(Path.GetDirectoryName(ConfigPath)!);
-        File.WriteAllText(ConfigPath, _receiverPath);
+        _settings.ReceiverPath = _receiverPath;
+        try { _settings.Save(); }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Receiver selected, but saving its path failed: " + ex.Message, "Airo");
+        }
         UpdateStatus("Receiver configured", Brushes.LightSkyBlue);
     }
     private void Capture_Click(object sender, RoutedEventArgs e) =>
         MessageBox.Show("Screenshots and recording are planned for a later beta.", "Capture");
     private void Settings_Click(object sender, RoutedEventArgs e)
     {
-        if (MessageBox.Show("Change the saved UxPlay executable?\n\nTip: Press F6 during mirroring to switch between portrait and wide layouts.", "Receiver settings", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-            SelectReceiver();
+        var dialog = new SettingsWindow(_settings) { Owner = this };
+        if (dialog.ShowDialog() != true || dialog.SavedSettings is null) return;
+        _settings = dialog.SavedSettings;
+        _receiverPath = _settings.ReceiverPath;
+        _wideLayout = _settings.WideLayout;
+        Topmost = _settings.AlwaysOnTop;
+        WindowState = _settings.StartMaximized
+            ? System.Windows.WindowState.Maximized
+            : System.Windows.WindowState.Normal;
+        UpdateVideoLayout();
     }
     private void About_Click(object sender, RoutedEventArgs e) =>
         MessageBox.Show("Airo Beta 0.2\n\nExperimental UxPlay window embedding. Not yet verified on all Windows builds. Audio, capture and reliable connection detection are not integrated.", "About Airo");
