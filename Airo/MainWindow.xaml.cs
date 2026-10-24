@@ -159,6 +159,18 @@ public partial class MainWindow : Window
             _lastVideoHeight = height;
         }
     }
+    private void VideoLayout_Click(object sender, RoutedEventArgs e)
+    {
+        _wideLayout = !_wideLayout;
+        UpdateVideoLayout();
+        ForceVideoRefresh();
+    }
+    private void RefreshVideo_Click(object sender, RoutedEventArgs e)
+    {
+        ForceVideoRefresh();
+        if (_embeddedWindow != IntPtr.Zero)
+            UpdateStatus("Video refresh requested · F6 layout · F7 refresh", Brushes.LightGreen);
+    }
     private void Home_Click(object sender, RoutedEventArgs e) { }
     private async void Devices_Click(object sender, RoutedEventArgs e)
     {
