@@ -2,7 +2,7 @@ name: Airo Beta 0.3 Windows build
 
 on:
   push:
-    branches: [beta-0.3, beta-0.3-performance, beta-0.3-video-stability, beta-0.3-stability]
+    branches: [beta-0.3, beta-0.3-performance, beta-0.3-video-stability, beta-0.3-stability, beta-0.3-video-quality]
   workflow_dispatch:
 
 jobs:
