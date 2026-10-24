@@ -140,7 +140,7 @@ public sealed class SettingsWindow : Wpf.Window
 
     public SettingsWindow(AiroSettings current)
     {
-        Title = "Airo Beta 0.2.1 — Settings";
+        Title = "Airo Beta 0.3 — Settings";
         Width = 710;
         Height = 725;
         MinWidth = 590;
@@ -165,7 +165,7 @@ public sealed class SettingsWindow : Wpf.Window
         root.Children.Add(footer);
         var footerRow = new Controls.DockPanel { LastChildFill = false };
         footer.Child = footerRow;
-        var version = Text("AIRO  /  BETA 0.2.1", 11, true, MutedText);
+        var version = Text("AIRO  /  BETA 0.3", 11, true, MutedText);
         version.VerticalAlignment = Wpf.VerticalAlignment.Center;
         footerRow.Children.Add(version);
         var actions = new Controls.StackPanel
@@ -250,6 +250,25 @@ public sealed class SettingsWindow : Wpf.Window
             FontSize = 12
         };
         receiverRow.Children.Add(_receiverPath);
+        var manager = Button("Receiver Manager", true);
+        manager.Margin = new Wpf.Thickness(0, 12, 0, 0);
+        manager.Click += (_, _) =>
+        {
+            var currentSelection = new AiroSettings
+            {
+                ReceiverPath = _receiverPath.Text,
+                StartMaximized = _startMaximized.IsChecked == true,
+                AlwaysOnTop = _alwaysOnTop.IsChecked == true,
+                WideLayout = _wideLayout
+            };
+            var window = new ReceiverManagerWindow(currentSelection) { Owner = this };
+            if (window.ShowDialog() == true && window.SelectedReceiverPath is not null)
+            {
+                _receiverPath.Text = window.SelectedReceiverPath;
+                _receiverPath.ToolTip = window.SelectedReceiverPath;
+            }
+        };
+        receiver.Children.Add(manager);
         browse.Click += (_, _) =>
         {
             var picker = new Win32.OpenFileDialog
