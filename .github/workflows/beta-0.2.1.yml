@@ -1,0 +1,29 @@
+name: Airo Beta 0.2.1 Windows build
+
+on:
+  push:
+    branches: [beta-0.2.1]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Restore
+        run: dotnet restore Airo/Airo.csproj
+      - name: Build
+        run: dotnet build Airo/Airo.csproj -c Release --no-restore
+      - name: Publish Windows x64
+        run: dotnet publish Airo/Airo.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
+      - name: Upload test build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Airo-Beta-0.2.1-win-x64
+          path: publish/
+          if-no-files-found: error
