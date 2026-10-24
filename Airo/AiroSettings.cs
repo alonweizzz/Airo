@@ -7,7 +7,6 @@ namespace Airo;
 public sealed class AiroSettings
 {
     public string ReceiverPath { get; set; } = "";
-    public bool AutoStartReceiver { get; set; }
     public bool StartMaximized { get; set; }
     public bool AlwaysOnTop { get; set; }
     public bool WideLayout { get; set; }
