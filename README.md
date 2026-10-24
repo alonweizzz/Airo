@@ -106,3 +106,16 @@ Receiver Manager now treats **installation state** separately from **WinGet comm
 - The manager includes **Installation diagnostics** and **Copy diagnostics** to help troubleshoot WinGet source/package mismatches without relying on raw modal error dialogs.
 
 This change does not uninstall, repair, or replace an existing receiver. It does not prove that an installed EXE is managed by WinGet; users who installed via MSI manually may need to update using **Manual download**. WinGet package availability is not guaranteed.
+
+## Beta 0.3 — Performance preview
+
+The `beta-0.3-performance` branch preserves the tested Receiver Manager from `beta-0.3` while refining the native video-host lifecycle.
+
+- **Faster initial video-window attachment:** checks every 250 ms for the first 30 seconds instead of every 1000 ms. The receiver still starts only when Devices is clicked.
+- **Lower idle polling overhead:** after 30 seconds without a window, checks every 750 ms; after attachment, checks the window every second.
+- **Late connections:** continues waiting for the video window beyond the former two-minute cutoff.
+- **Window recreation:** if the embedded window disappears while the receiver process is still running, Airo returns to waiting and attempts to attach a replacement window.
+- **Less native resize work:** coalesces frequent panel resizes into a 40 ms update and skips identical sizes. The expensive `SWP_FRAMECHANGED` flag is applied only on the initial attach, not on every resize.
+- **Cleanup:** stopping the receiver cancels pending attachment attempts and scheduled resizes.
+
+These changes aim to reduce host UI overhead and improve attach responsiveness. They **do not** modify UxPlay's encoding/decoding pipeline or guarantee lower AirPlay streaming latency or CPU usage. Verify screen mirroring, F6 layout switching, resizing, long idle waits, and receiver stop/restart on Windows before merging.
