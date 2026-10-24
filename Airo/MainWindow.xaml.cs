@@ -57,8 +57,6 @@ public partial class MainWindow : Window
         Loaded += (_, _) =>
         {
             if (_settings.StartMaximized) WindowState = System.Windows.WindowState.Maximized;
-            if (_settings.AutoStartReceiver && File.Exists(_receiverPath))
-                Devices_Click(this, new RoutedEventArgs());
         };
         Closed += (_, _) => StopReceiver();
     }
