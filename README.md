@@ -69,3 +69,19 @@ The Settings dock button now opens a real settings window. You can:
 Settings are saved to `%LOCALAPPDATA%\\Airo\\settings.json` and loaded on the next launch. On first use, Airo imports the previously selected UxPlay path from `receiver-path.txt`. The receiver is **not** bundled and mirroring still depends on the installed third-party receiver. The receiver starts only when you use the Devices button; automatic receiver startup is intentionally disabled.
 
 To test this branch, download the `beta-0.2.1` branch and run `dotnet run --project Airo/Airo.csproj`. Verify startup window settings, changing layouts, and the saved receiver path before merging to main.
+
+## Beta 0.3 — Receiver Manager (preview branch)
+
+Beta 0.3 is being developed on `beta-0.3` based on the tested `beta-0.2.1` settings branch; neither `main` nor `beta-0.2.1` was changed.
+
+Open **Settings → Receiver Manager** to:
+- Check the saved receiver path and common Windows installation directories.
+- See the executable's embedded file version, when provided by Windows.
+- Select a receiver EXE manually and save it for Airo.
+- Open the [third-party uxplay-windows releases](https://github.com/leapbtw/uxplay-windows/releases) page to install or update manually, then scan again.
+
+When the Devices button is used without a valid receiver, Airo now opens Receiver Manager instead of a bare file picker.
+
+**Safety and scope:** The Manager only checks file existence and file metadata; it does not claim that AirPlay is connected or that a receiver build is trustworthy. The install/update button opens a third-party download page **after confirmation**. Airo does not automatically download, execute, silently install, or update third-party binaries. Verify provenance, Windows compatibility, license and installer integrity before enabling automated installation in a future release.
+
+The Beta 0.3 branch has its own Windows build workflow. Test the manager and mirroring on Windows before merging.
