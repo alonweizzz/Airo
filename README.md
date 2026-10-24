@@ -55,3 +55,18 @@ No binaries or third-party dependencies are redistributed. Review the receiver l
 ### Native receiver viewport sizing (Beta 0.2)
 
 Airo now sizes both the WPF video host and the embedded native UxPlay window to a centered aspect-ratio viewport. Portrait defaults to approximately 9:19.5 (typical modern iPhone); press **F6** to switch to a 16:9 landscape viewport, or back again. Native resizing uses `SetWindowPos` with `SWP_FRAMECHANGED` so the external window recalculates its frame after embedding. This is still experimental: UxPlay may draw its own letterboxing or use a different source aspect ratio, which Airo cannot reliably remove by resizing its host window. Verify both orientations and audio on the target Windows PC.
+
+## Beta 0.2.1 — Settings (development branch)
+
+Beta 0.2.1 is developed on the `beta-0.2.1` branch so the known-working Beta 0.2 remains unchanged on `main`.
+
+The Settings dock button now opens a real settings window. You can:
+- Select/change the installed UxPlay receiver executable.
+- Automatically start the receiver when Airo launches (off by default).
+- Open Airo maximized (off by default).
+- Keep Airo above other windows (off by default).
+- Select portrait or 16:9 wide video layout as the default; F6 still toggles during a session.
+
+Settings are saved to `%LOCALAPPDATA%\\Airo\\settings.json` and loaded on the next launch. On first use, Airo imports the previously selected UxPlay path from `receiver-path.txt`. The receiver is **not** bundled and mirroring still depends on the installed third-party receiver. Auto-start only starts that executable; it does not guarantee a successful AirPlay connection.
+
+To test this branch, download the `beta-0.2.1` branch and run `dotnet run --project Airo/Airo.csproj`. Verify startup settings, changing layouts, and the saved receiver path before merging to main.
