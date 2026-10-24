@@ -96,8 +96,10 @@ public partial class MainWindow : Window
         var aspect = _wideLayout ? LandscapeAspect : PortraitAspect;
         var fittedWidth = Math.Min(width, height * aspect);
         var fittedHeight = fittedWidth / aspect;
-        if (Math.Abs(VideoHost.Width - fittedWidth) > 0.5) VideoHost.Width = fittedWidth;
-        if (Math.Abs(VideoHost.Height - fittedHeight) > 0.5) VideoHost.Height = fittedHeight;
+        if (double.IsNaN(VideoHost.Width) || Math.Abs(VideoHost.Width - fittedWidth) > 0.5)
+            VideoHost.Width = fittedWidth;
+        if (double.IsNaN(VideoHost.Height) || Math.Abs(VideoHost.Height - fittedHeight) > 0.5)
+            VideoHost.Height = fittedHeight;
         ScheduleVideoResize();
     }
     private void ScheduleVideoResize()
@@ -227,8 +229,17 @@ public partial class MainWindow : Window
                 VideoHost.Visibility = Visibility.Visible;
                 EmptyState.Visibility = Visibility.Collapsed;
                 UpdateVideoLayout();
-                ResizeVideo(force: true);
-                UpdateStatus("Receiver embedded · F6 rotate layout", Brushes.LightGreen);
+                // Wait until WPF has measured the now-visible WindowsFormsHost.
+                // Immediately resizing a not-yet-arranged host can leave a blank viewport.
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    if (launch != _launchId || _embeddedWindow != hwnd) return;
+                    VideoHost.UpdateLayout();
+                    _resizeTimer.Stop();
+                    ResizeVideo(force: true);
+                    ScheduleVideoResize();
+                    UpdateStatus("Receiver embedded · F6 rotate layout", Brushes.LightGreen);
+                }, DispatcherPriority.Loaded);
             }
             catch (InvalidOperationException) when (launch != _launchId) { return; }
             catch (ObjectDisposedException) { return; }
