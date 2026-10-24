@@ -123,3 +123,25 @@ These changes aim to reduce host UI overhead and improve attach responsiveness. 
 ### Hotfix — blank embedded video
 
 Fixed a regression in the performance preview where WPF's initially unset `WindowsFormsHost.Width` and `Height` are `double.NaN`. The optimized size comparison previously skipped the initial dimensions entirely, so the receiver could report "embedded" with an empty viewport. The host now explicitly initializes dimensions when unset and performs the initial native resize after WPF's layout pass. Re-test iPhone mirroring, F6 and window resizing. This fix has not yet been verified on the target Windows machine.
+
+## Beta 0.3 — Video stability and layout preview
+
+Development branch: `beta-0.3-video-stability` (based on the user's working `beta-0.3-performance` preview). Previous branches are unchanged.
+
+### Improvements
+
+- **Portrait / landscape:** use **Layout** in the header or **F6**. The host fits a 9:19.5 portrait or 16:9 landscape viewport inside the available area without intentional cropping or non-uniform scaling. A layout change schedules a forced native resize and redraw after WPF has arranged the host.
+- **Black / stale embedded viewport recovery:** use **Refresh** in the header or **F7**. This forces the existing native receiver window to recompute its client area and requests a redraw, without restarting or reinstalling UxPlay. This helps with stale host geometry; it cannot repair an upstream AirPlay decoder stall or missing stream frames.
+- **Resizing stability:** host updates are coalesced to reduce unnecessary native resize work, but an additional 200 ms deadline prevents continuous dragging from delaying all native resize updates.
+- **Native window safety:** verifies that the embedded handle still exists before native resizing and only caches dimensions after Windows reports a successful resize.
+- **Preserves reconnect logic:** if the receiver's video window is destroyed, the existing attachment loop waits for a replacement.
+
+### Test on Windows
+
+1. Start UxPlay from Devices and mirror an iPhone. Confirm picture and sound behavior are unchanged.
+2. Press **F6** repeatedly and use the **Layout** button; test both portrait and landscape with a maximized and restored Airo window.
+3. Drag the window edges continuously and confirm the video updates without getting stuck black.
+4. Press **F7** / **Refresh** if the viewport turns black; if the iPhone stream itself has stopped, reconnect the phone or restart the receiver.
+5. Stop/restart the receiver and reconnect after a delay. Confirm the Receiver Manager remains functional.
+
+**Scope:** This release targets the host's display quality and stability (fewer unnecessary native redraw/resize operations and consistent aspect fit). It does **not** change UxPlay's video codec, decoded stream resolution, or actual FPS; any future decoder quality controls require validating supported options of the installed receiver build. Build and runtime behavior still require verification on Windows.
