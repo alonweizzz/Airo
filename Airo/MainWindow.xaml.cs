@@ -204,6 +204,20 @@ public partial class MainWindow : Window
                 },
                 EnableRaisingEvents = true
             };
+            // Never change the known-good launch flags unless a profile is selected.
+            // ArgumentList handles token boundaries without shell quoting.
+            switch (_settings.VideoProfile)
+            {
+                case "Smooth":
+                    process.StartInfo.ArgumentList.Add("-fps");
+                    process.StartInfo.ArgumentList.Add("60");
+                    process.StartInfo.ArgumentList.Add("-vsync");
+                    break;
+                case "Responsive":
+                    process.StartInfo.ArgumentList.Add("-vsync");
+                    process.StartInfo.ArgumentList.Add("no");
+                    break;
+            }
             _receiver = process;
             var launch = ++_launchId;
             process.Exited += (_, _) =>
@@ -231,7 +245,7 @@ public partial class MainWindow : Window
             };
             if (!process.Start()) throw new InvalidOperationException("Receiver did not start.");
             _embedRetryCount = 0;
-            UpdateStatus("Waiting for receiver window", Brushes.LightSkyBlue);
+            UpdateStatus("Waiting for receiver window · " + (_settings.VideoProfile ?? "Balanced"), Brushes.LightSkyBlue);
             _receiverStarting = false;
             await AttachWhenReady(process, launch);
         }
