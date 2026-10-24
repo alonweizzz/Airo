@@ -145,3 +145,15 @@ Development branch: `beta-0.3-video-stability` (based on the user's working `bet
 5. Stop/restart the receiver and reconnect after a delay. Confirm the Receiver Manager remains functional.
 
 **Scope:** This release targets the host's display quality and stability (fewer unnecessary native redraw/resize operations and consistent aspect fit). It does **not** change UxPlay's video codec, decoded stream resolution, or actual FPS; any future decoder quality controls require validating supported options of the installed receiver build. Build and runtime behavior still require verification on Windows.
+
+## Beta 0.3 — Receiver stability preview
+
+The `beta-0.3-stability` branch extends the previously tested video-stability branch without changing it.
+
+- Blocks duplicate receiver launches while a start attempt is in progress (for example, a rapid double-click on Devices).
+- Safely checks receiver process state even if Windows has already exited or disposed the process.
+- Retries up to three transient window-embedding failures instead of abandoning the connection on the first failed attempt; shows a clear message if all retries fail.
+- Clears stale native-window and resize state between failed attempts.
+- Resets the Win32 last-error value before `SetParent`, distinguishing an actual failure from a successful reparenting that returns a null previous parent.
+
+**Windows smoke test:** (1) Launch UxPlay with Devices, (2) double-click Devices rapidly and confirm only one receiver launches, (3) mirror the iPhone, (4) switch layout with F6 and refresh with F7, (5) stop and restart the receiver, (6) disconnect/reconnect the iPhone and confirm video returns. The branch is a preview and has not been verified on the user's Windows installation.
