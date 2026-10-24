@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Wpf = System.Windows;
 using Controls = System.Windows.Controls;
 using Media = System.Windows.Media;
@@ -11,8 +12,8 @@ using Win32 = Microsoft.Win32;
 namespace Airo;
 
 /// <summary>
-/// Receiver discovery and management. Does not execute untrusted downloads.
-/// Installation remains user-confirmed via the receiver project's releases page.
+/// Receiver discovery and management. Optional user-confirmed installation
+/// is delegated to Windows Package Manager, never direct binary execution.
 /// </summary>
 public sealed class ReceiverManagerWindow : Wpf.Window
 {
@@ -22,6 +23,10 @@ public sealed class ReceiverManagerWindow : Wpf.Window
     private readonly Controls.TextBlock _path;
     private readonly Controls.TextBlock _details;
     private readonly Controls.Button _useButton;
+    private readonly Controls.Button _installButton;
+    private readonly Controls.Button _updateButton;
+    private readonly Controls.Button _scanButton;
+    private bool _installationRunning;
     private readonly AiroSettings _settings;
     private string? _candidate;
 
@@ -126,21 +131,27 @@ public sealed class ReceiverManagerWindow : Wpf.Window
         actionsTitle.FontWeight = Wpf.FontWeights.SemiBold;
         actionsTitle.Margin = new Wpf.Thickness(0, 0, 0, 8);
         actionsCard.Children.Add(actionsTitle);
-        var guidance = Text("Airo can detect your existing UxPlay installation. To install or update, open the Windows receiver releases, run its installer, then scan again.", 12, "#A8BED9");
+        var guidance = Text("Install or update UxPlay through Windows Package Manager (WinGet). Airo will scan again when setup finishes.", 12, "#A8BED9");
         guidance.Margin = new Wpf.Thickness(0, 0, 0, 16);
         actionsCard.Children.Add(guidance);
         var buttons = new Controls.WrapPanel();
         actionsCard.Children.Add(buttons);
-        var detect = Button("Scan again", true);
-        detect.Click += (_, _) => Detect();
-        buttons.Children.Add(detect);
+        _scanButton = Button("Scan again");
+        _scanButton.Click += (_, _) => Detect();
+        buttons.Children.Add(_scanButton);
         var browse = Button("Choose EXE");
         browse.Click += (_, _) => Browse();
         buttons.Children.Add(browse);
-        var install = Button("Install / update...");
-        install.Click += (_, _) => OpenInstallerPage();
-        buttons.Children.Add(install);
-        var disclaimer = Text("Install/update opens a third-party releases page in your browser; Airo does not download or run installers automatically. Verify the publisher before installing.", 11, "#8EAACB");
+        _installButton = Button("Install receiver", true);
+        _installButton.Click += async (_, _) => await InstallOrUpdateAsync(false);
+        buttons.Children.Add(_installButton);
+        _updateButton = Button("Update receiver");
+        _updateButton.Click += async (_, _) => await InstallOrUpdateAsync(true);
+        buttons.Children.Add(_updateButton);
+        var manual = Button("Manual download");
+        manual.Click += (_, _) => OpenInstallerPage();
+        buttons.Children.Add(manual);
+        var disclaimer = Text("WinGet uses package leapbtw.uxplay from Microsoft's winget source. You approve each operation; installation may request administrator permission. Airo does not bundle UxPlay. If WinGet is unavailable, use Manual download.", 11, "#8EAACB");
         disclaimer.Margin = new Wpf.Thickness(0, 4, 0, 0);
         actionsCard.Children.Add(disclaimer);
 
@@ -218,10 +229,79 @@ public sealed class ReceiverManagerWindow : Wpf.Window
         if (picker.ShowDialog(this) == true) ShowCandidate(picker.FileName);
     }
 
+    private async Task InstallOrUpdateAsync(bool update)
+    {
+        if (_installationRunning) return;
+        var operation = update ? "update" : "install";
+        var choice = Wpf.MessageBox.Show(this,
+            $"Airo will ask Windows Package Manager (WinGet) to {operation} UxPlay from package 'leapbtw.uxplay' in the winget source.\\n\\n" +
+            "The package comes from a third-party publisher. WinGet will download it and may display installer and administrator prompts. Package and source agreements will be accepted for this operation.\\n\\nContinue?",
+            "Confirm receiver " + operation, Wpf.MessageBoxButton.YesNo, Wpf.MessageBoxImage.Question);
+        if (choice != Wpf.MessageBoxResult.Yes) return;
+
+        if (ReceiverInstaller.FindWinget() is null)
+        {
+            var fallback = Wpf.MessageBox.Show(this,
+                "WinGet is not installed or could not be found. Open the publisher's releases page for manual installation instead?",
+                "Windows Package Manager not found", Wpf.MessageBoxButton.YesNo, Wpf.MessageBoxImage.Information);
+            if (fallback == Wpf.MessageBoxResult.Yes) OpenInstallerPage();
+            return;
+        }
+
+        _installationRunning = true;
+        _installButton.IsEnabled = false;
+        _updateButton.IsEnabled = false;
+        _scanButton.IsEnabled = false;
+        _useButton.IsEnabled = false;
+        _status.Text = update ? "Updating receiver..." : "Installing receiver...";
+        _status.Foreground = Paint("#7ACCF8");
+        _details.Text = "Please finish any installer or administrator prompts. Airo is waiting for WinGet.";
+        try
+        {
+            var exitCode = await ReceiverInstaller.RunAsync(update);
+            // The installer can finish before filesystem paths are visible.
+            await Task.Delay(700);
+            Detect();
+            if (exitCode == 0)
+            {
+                if (_candidate is not null)
+                {
+                    _details.Text = "WinGet completed. Receiver found. Select 'Use this receiver' to save it.";
+                }
+                else
+                {
+                    _details.Text = "WinGet completed, but the executable was not located. Choose EXE or scan again.";
+                }
+            }
+            else
+            {
+                _details.Text = $"WinGet exited with code {exitCode}. Check installation prompts, then scan again or use Manual download.";
+                Wpf.MessageBox.Show(this,
+                    $"Windows Package Manager did not report success (exit code {exitCode}). The receiver was not changed by Airo.",
+                    "Receiver setup", Wpf.MessageBoxButton.OK, Wpf.MessageBoxImage.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Detect();
+            _details.Text = "Installation could not be started or completed. Try Manual download.";
+            Wpf.MessageBox.Show(this, ex.Message, "Receiver setup failed",
+                Wpf.MessageBoxButton.OK, Wpf.MessageBoxImage.Error);
+        }
+        finally
+        {
+            _installationRunning = false;
+            _installButton.IsEnabled = true;
+            _updateButton.IsEnabled = true;
+            _scanButton.IsEnabled = true;
+            _useButton.IsEnabled = _candidate is not null;
+        }
+    }
+
     private void OpenInstallerPage()
     {
         var result = Wpf.MessageBox.Show(this,
-            "This opens a third-party Windows UxPlay releases page. Review the publisher and installer before downloading. Continue?",
+            "Open the third-party UxPlay Windows releases page for manual download? Verify the publisher and installer before running anything.",
             "Install or update receiver", Wpf.MessageBoxButton.YesNo, Wpf.MessageBoxImage.Information);
         if (result != Wpf.MessageBoxResult.Yes) return;
         try
