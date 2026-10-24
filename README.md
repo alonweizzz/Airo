@@ -178,3 +178,23 @@ These are **UxPlay command-line options**, not changes to the decoder, networkin
 4. Revert to **Balanced** and restart if either preset fails. Compare with identical Wi-Fi and phone conditions.
 
 Build and runtime behavior have not yet been verified on the user's Windows PC.
+
+## Beta 0.4 — UI design preview
+
+Development takes place in `beta-0.4-ui`, based on the user-tested `beta-0.3-video-quality` branch. This initial visual pass changes the main-window XAML only; the AirPlay receiver lifecycle, video profiles, and embedding logic are unchanged.
+
+- Modern blue-on-dark Fluent-inspired shell with layered translucent gradients, softened corners, and a brighter floating dock.
+- Consistent rounded Layout and Refresh buttons, polished receiver status badge, and a refined video stage.
+- Updated Beta 0.4 branding and more focused empty-state copy.
+- Uses built-in WPF brushes and shadows. **This is a frosted-glass visual approximation**, not Windows DWM backdrop blur or native Apple Liquid Glass.
+- No extra dependencies, new decoder, or new receiver arguments.
+
+### Windows UI smoke test
+
+1. Run `dotnet run --project Airo/Airo.csproj` on Windows.
+2. Check that the window renders at normal size and at its minimum size.
+3. Start the receiver from the dock; mirror an iPhone in portrait and landscape.
+4. Verify F6/Layout, F7/Refresh, Settings, Receiver Manager, and Video performance profiles.
+5. Confirm the floating dock remains visible and the video viewport resizes correctly.
+
+The GitHub Actions workflow builds this branch, but successful Windows rendering and mirroring still require local testing.
