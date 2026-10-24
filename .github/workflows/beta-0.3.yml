@@ -1,8 +1,8 @@
-name: Airo Beta 0.3 Windows build
+name: Airo Beta preview Windows build
 
 on:
   push:
-    branches: [beta-0.3, beta-0.3-performance, beta-0.3-video-stability, beta-0.3-stability, beta-0.3-video-quality]
+    branches: [beta-0.3, beta-0.3-performance, beta-0.3-video-stability, beta-0.3-stability, beta-0.3-video-quality, beta-0.4-ui]
   workflow_dispatch:
 
 jobs:
@@ -21,6 +21,6 @@ jobs:
         run: dotnet publish Airo/Airo.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
       - uses: actions/upload-artifact@v4
         with:
-          name: Airo-Beta-0.3-Windows-x64
+          name: Airo-Beta-preview-Windows-x64
           path: publish/
           if-no-files-found: error
