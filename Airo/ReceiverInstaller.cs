@@ -10,11 +10,20 @@ namespace Airo;
 /// Uses Microsoft's Windows Package Manager and its verified package manifest.
 /// No installers are downloaded or executed directly by Airo.
 /// </summary>
+public sealed record ReceiverCommandResult(int ExitCode, string StandardOutput, string StandardError)
+{
+    public string HexCode => $"0x{unchecked((uint)ExitCode):X8}";
+    public bool PackageNotFound => unchecked((uint)ExitCode) == 0x8A150014;
+    public bool NoUpdateAvailable => unchecked((uint)ExitCode) == 0x8A15002B;
+    public bool AlreadyInstalled => unchecked((uint)ExitCode) == 0x8A15010D;
+    public string Diagnostics => $"WinGet exit: {ExitCode} ({HexCode})\nOutput:\n{StandardOutput}\nErrors:\n{StandardError}";
+}
+
 public static class ReceiverInstaller
 {
     public const string PackageId = "leapbtw.uxplay";
 
-    public static async Task<int> RunAsync(bool update)
+    public static async Task<ReceiverCommandResult> RunAsync(bool update)
     {
         var executable = FindWinget();
         if (executable is null)
@@ -38,7 +47,7 @@ public static class ReceiverInstaller
         var stdout = process.StandardOutput.ReadToEndAsync();
         var stderr = process.StandardError.ReadToEndAsync();
         await Task.WhenAll(stdout, stderr, process.WaitForExitAsync());
-        return process.ExitCode;
+        return new ReceiverCommandResult(process.ExitCode, await stdout, await stderr);
     }
 
     public static string? FindWinget()
