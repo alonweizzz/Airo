@@ -117,8 +117,10 @@ public partial class MainWindow : Window
         }
         if (string.IsNullOrWhiteSpace(_receiverPath) || !File.Exists(_receiverPath))
         {
-            SelectReceiver();
-            if (string.IsNullOrWhiteSpace(_receiverPath) || !File.Exists(_receiverPath)) return;
+            var manager = new ReceiverManagerWindow(_settings) { Owner = this };
+            if (manager.ShowDialog() != true || string.IsNullOrWhiteSpace(manager.SelectedReceiverPath)) return;
+            _receiverPath = manager.SelectedReceiverPath;
+            _settings.ReceiverPath = _receiverPath;
         }
         try
         {
@@ -237,5 +239,5 @@ public partial class MainWindow : Window
         UpdateVideoLayout();
     }
     private void About_Click(object sender, RoutedEventArgs e) =>
-        MessageBox.Show("Airo Beta 0.2.1\n\nExperimental UxPlay window embedding. Not yet verified on all Windows builds. Audio, capture and reliable connection detection are not integrated.", "About Airo");
+        MessageBox.Show("Airo Beta 0.3\n\nExperimental UxPlay window embedding. Not yet verified on all Windows builds. Audio, capture and reliable connection detection are not integrated.", "About Airo");
 }
