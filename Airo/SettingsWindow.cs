@@ -254,13 +254,8 @@ public sealed class SettingsWindow : Wpf.Window
         manager.Margin = new Wpf.Thickness(0, 12, 0, 0);
         manager.Click += (_, _) =>
         {
-            var currentSelection = new AiroSettings
-            {
-                ReceiverPath = _receiverPath.Text,
-                StartMaximized = _startMaximized.IsChecked == true,
-                AlwaysOnTop = _alwaysOnTop.IsChecked == true,
-                WideLayout = _wideLayout
-            };
+            var currentSelection = AiroSettings.Load();
+            currentSelection.ReceiverPath = _receiverPath.Text;
             var window = new ReceiverManagerWindow(currentSelection) { Owner = this };
             if (window.ShowDialog() == true && window.SelectedReceiverPath is not null)
             {
