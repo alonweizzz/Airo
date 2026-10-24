@@ -157,3 +157,24 @@ The `beta-0.3-stability` branch extends the previously tested video-stability br
 - Resets the Win32 last-error value before `SetParent`, distinguishing an actual failure from a successful reparenting that returns a null previous parent.
 
 **Windows smoke test:** (1) Launch UxPlay with Devices, (2) double-click Devices rapidly and confirm only one receiver launches, (3) mirror the iPhone, (4) switch layout with F6 and refresh with F7, (5) stop and restart the receiver, (6) disconnect/reconnect the iPhone and confirm video returns. The branch is a preview and has not been verified on the user's Windows installation.
+
+## Beta 0.3 — Video quality / latency preview
+
+The `beta-0.3-video-quality` branch is based on the user's tested `beta-0.3-stability` branch. All previously tested branches are unchanged.
+
+Open **Settings → Video performance (experimental)** and select one of these receiver startup profiles:
+
+- **Balanced** (default): no additional UxPlay arguments; identical receiver startup behavior to the tested stability build.
+- **Smooth**: passes `-fps 60 -vsync` to request a higher maximum AirPlay framerate with timestamp-based A/V synchronization. The iPhone may still send fewer frames, and CPU usage may rise.
+- **Responsive**: passes `-vsync no` to test disabling timestamp-based synchronization, which can suit interactive mirroring on some desktop setups. It can cause different A/V synchronization behavior; it does not guarantee lower latency.
+
+These are **UxPlay command-line options**, not changes to the decoder, networking stack, resolution, or guaranteed frame rate. Availability depends on the exact Windows receiver build. Changes apply only to the next receiver start: stop the receiver with Devices and start it again after saving. If a preset fails or worsens playback, revert to Balanced.
+
+### Windows test checklist
+
+1. Confirm **Balanced** still mirrors with no regression, including portrait/landscape F6 and refresh F7.
+2. Stop the receiver, select **Smooth**, save, restart receiver and compare motion fluidity on the same iPhone content.
+3. Stop, select **Responsive**, save, restart, and compare input-to-display delay; check for audio/video desynchronization.
+4. Revert to **Balanced** and restart if either preset fails. Compare with identical Wi-Fi and phone conditions.
+
+Build and runtime behavior have not yet been verified on the user's Windows PC.
