@@ -78,10 +78,20 @@ Open **Settings → Receiver Manager** to:
 - Check the saved receiver path and common Windows installation directories.
 - See the executable's embedded file version, when provided by Windows.
 - Select a receiver EXE manually and save it for Airo.
-- Open the [third-party uxplay-windows releases](https://github.com/leapbtw/uxplay-windows/releases) page to install or update manually, then scan again.
+- Install or update the receiver from inside Airo using Windows Package Manager (WinGet), with an explicit confirmation before each operation.\n- Open the [third-party uxplay-windows releases](https://github.com/leapbtw/uxplay-windows/releases) page as a manual fallback if WinGet is unavailable.
 
 When the Devices button is used without a valid receiver, Airo now opens Receiver Manager instead of a bare file picker.
 
-**Safety and scope:** The Manager only checks file existence and file metadata; it does not claim that AirPlay is connected or that a receiver build is trustworthy. The install/update button opens a third-party download page **after confirmation**. Airo does not automatically download, execute, silently install, or update third-party binaries. Verify provenance, Windows compatibility, license and installer integrity before enabling automated installation in a future release.
+**Safety and scope:** The Manager only checks file existence and file metadata; it does not claim that AirPlay is connected or that a receiver build is trustworthy. The Install and Update buttons call WinGet for the exact `leapbtw.uxplay` package from the `winget` source **only after explicit confirmation**. WinGet downloads and launches the third-party installer and may request administrator permission. Airo itself does not bundle, download or directly execute third-party installer binaries. The manager rescans after WinGet exits; click **Use this receiver** to save the detected EXE. If WinGet is missing, use the manual releases-page fallback. Verify provenance, Windows compatibility, license and installer integrity before distributing a bundled installer in a future release.
 
 The Beta 0.3 branch has its own Windows build workflow. Test the manager and mirroring on Windows before merging.
+
+### Test in-app receiver installation
+
+1. Open Settings → Receiver Manager. Confirm your existing receiver still appears.
+2. Click **Install receiver** (or **Update receiver** if already installed). Read the publisher/package confirmation before approving.
+3. Complete any Windows installer/UAC prompts. Airo waits for WinGet to finish and then scans the installed receiver again.
+4. Click **Use this receiver** to save its executable path. Verify that Devices still launches the working receiver and mirroring continues to work.
+5. If WinGet is unavailable, click **Manual download** and install from the third-party releases page, then click **Scan again**.
+
+No receiver installation starts automatically when Airo launches. Airo cannot guarantee that every Windows system has WinGet or that every UxPlay release has an available WinGet package. The receiver's installer may be unsigned; verify the publisher and source before proceeding.
