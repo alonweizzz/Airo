@@ -119,3 +119,7 @@ The `beta-0.3-performance` branch preserves the tested Receiver Manager from `be
 - **Cleanup:** stopping the receiver cancels pending attachment attempts and scheduled resizes.
 
 These changes aim to reduce host UI overhead and improve attach responsiveness. They **do not** modify UxPlay's encoding/decoding pipeline or guarantee lower AirPlay streaming latency or CPU usage. Verify screen mirroring, F6 layout switching, resizing, long idle waits, and receiver stop/restart on Windows before merging.
+
+### Hotfix — blank embedded video
+
+Fixed a regression in the performance preview where WPF's initially unset `WindowsFormsHost.Width` and `Height` are `double.NaN`. The optimized size comparison previously skipped the initial dimensions entirely, so the receiver could report "embedded" with an empty viewport. The host now explicitly initializes dimensions when unset and performs the initial native resize after WPF's layout pass. Re-test iPhone mirroring, F6 and window resizing. This fix has not yet been verified on the target Windows machine.
