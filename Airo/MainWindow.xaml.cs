@@ -239,5 +239,5 @@ public partial class MainWindow : Window
         UpdateVideoLayout();
     }
     private void About_Click(object sender, RoutedEventArgs e) =>
-        MessageBox.Show("Airo Beta 0.2\n\nExperimental UxPlay window embedding. Not yet verified on all Windows builds. Audio, capture and reliable connection detection are not integrated.", "About Airo");
+        MessageBox.Show("Airo Beta 0.2.1\n\nExperimental UxPlay window embedding. Not yet verified on all Windows builds. Audio, capture and reliable connection detection are not integrated.", "About Airo");
 }
