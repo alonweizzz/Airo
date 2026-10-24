@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using System.Windows.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -15,6 +16,7 @@ using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 namespace Airo;
 public partial class MainWindow : Window
 {
+    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool IsWindow(IntPtr hwnd);
     [DllImport("user32.dll", SetLastError = true)] private static extern IntPtr SetParent(IntPtr child, IntPtr parent);
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW", SetLastError = true)] private static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW", SetLastError = true)] private static extern IntPtr SetWindowLongPtr(IntPtr hwnd, int index, IntPtr value);
@@ -30,6 +32,8 @@ public partial class MainWindow : Window
     private IntPtr _embeddedWindow;
     private readonly Forms.Panel _videoPanel = new() { BackColor = System.Drawing.Color.Black };
     private int _launchId;
+    private readonly DispatcherTimer _resizeTimer = new() { Interval = TimeSpan.FromMilliseconds(40) };
+    private int _lastVideoWidth = -1, _lastVideoHeight = -1;
     private bool _wideLayout;
     // iPhone portrait screens are taller than 9:16; use a closer 9:19.5 viewport.
     private const double PortraitAspect = 9.0 / 19.5;
@@ -39,7 +43,8 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         VideoHost.Child = _videoPanel;
-        _videoPanel.Resize += (_, _) => ResizeVideo();
+        _videoPanel.Resize += (_, _) => ScheduleVideoResize();
+        _resizeTimer.Tick += (_, _) => { _resizeTimer.Stop(); ResizeVideo(); };
         DisplaySurface.SizeChanged += (_, _) => UpdateVideoLayout();
         PreviewKeyDown += (_, e) =>
         {
@@ -91,21 +96,30 @@ public partial class MainWindow : Window
         var aspect = _wideLayout ? LandscapeAspect : PortraitAspect;
         var fittedWidth = Math.Min(width, height * aspect);
         var fittedHeight = fittedWidth / aspect;
-        VideoHost.Width = fittedWidth;
-        VideoHost.Height = fittedHeight;
-        ResizeVideo();
+        if (Math.Abs(VideoHost.Width - fittedWidth) > 0.5) VideoHost.Width = fittedWidth;
+        if (Math.Abs(VideoHost.Height - fittedHeight) > 0.5) VideoHost.Height = fittedHeight;
+        ScheduleVideoResize();
     }
-    private void ResizeVideo()
+    private void ScheduleVideoResize()
+    {
+        if (_embeddedWindow == IntPtr.Zero || _videoPanel.IsDisposed) return;
+        // Coalesce rapid resize events instead of repeatedly resizing the native renderer.
+        _resizeTimer.Stop();
+        _resizeTimer.Start();
+    }
+    private void ResizeVideo(bool force = false)
     {
         if (_embeddedWindow == IntPtr.Zero || _videoPanel.IsDisposed) return;
         var width = _videoPanel.ClientSize.Width;
         var height = _videoPanel.ClientSize.Height;
         if (width <= 0 || height <= 0) return;
-        // Tell the external renderer about the *actual native client size*.
-        // SWP_FRAMECHANGED forces the native child to recalculate its non-client
-        // geometry after its caption/borders have been removed.
+        if (!force && width == _lastVideoWidth && height == _lastVideoHeight) return;
+        // SWP_FRAMECHANGED is needed after reparenting, not on every mouse movement.
         SetWindowPos(_embeddedWindow, IntPtr.Zero, 0, 0, width, height,
-            SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+            SWP_NOZORDER | SWP_NOACTIVATE | SWP_SHOWWINDOW |
+            (force ? SWP_FRAMECHANGED : 0));
+        _lastVideoWidth = width;
+        _lastVideoHeight = height;
     }
     private void Home_Click(object sender, RoutedEventArgs e) { }
     private async void Devices_Click(object sender, RoutedEventArgs e)
@@ -136,16 +150,28 @@ public partial class MainWindow : Window
             };
             _receiver = process;
             var launch = ++_launchId;
-            process.Exited += (_, _) => Dispatcher.BeginInvoke(() =>
+            process.Exited += (_, _) =>
             {
-                if (launch != _launchId) return;
-                _embeddedWindow = IntPtr.Zero;
-                VideoHost.Visibility = Visibility.Collapsed;
-                EmptyState.Visibility = Visibility.Visible;
-                UpdateStatus("Receiver stopped", Brushes.Orange);
-                _receiver = null;
-                process.Dispose();
-            });
+                try
+                {
+                    Dispatcher.BeginInvoke(() =>
+                    {
+                        if (launch == _launchId)
+                        {
+                            _resizeTimer.Stop();
+                            _embeddedWindow = IntPtr.Zero;
+                            _lastVideoWidth = _lastVideoHeight = -1;
+                            VideoHost.Visibility = Visibility.Collapsed;
+                            EmptyState.Visibility = Visibility.Visible;
+                            UpdateStatus("Receiver stopped", Brushes.Orange);
+                            _receiver = null;
+                        }
+                        process.Dispose();
+                    });
+                }
+                catch (TaskCanceledException) { process.Dispose(); }
+                catch (InvalidOperationException) { process.Dispose(); }
+            };
             if (!process.Start()) throw new InvalidOperationException("Receiver did not start.");
             UpdateStatus("Waiting for receiver window", Brushes.LightSkyBlue);
             await AttachWhenReady(process, launch);
@@ -159,34 +185,56 @@ public partial class MainWindow : Window
     }
     private async Task AttachWhenReady(Process process, int launch)
     {
-        // Some UxPlay builds create their video window only after the iPhone connects.
-        for (int i = 0; i < 120 && launch == _launchId; i++)
+        // Fast discovery during initial connection, slower checks while idle.
+        // Keep watching after two minutes: the iPhone may connect much later.
+        var waiting = Stopwatch.StartNew();
+        while (launch == _launchId)
         {
-            await Task.Delay(1000);
-            if (process.HasExited || launch != _launchId) return;
-            process.Refresh();
-            var hwnd = process.MainWindowHandle;
-            if (hwnd == IntPtr.Zero) continue;
+            await Task.Delay(_embeddedWindow != IntPtr.Zero ? 1000 :
+                waiting.Elapsed < TimeSpan.FromSeconds(30) ? 250 : 750);
+            if (launch != _launchId) return;
             try
             {
-                VideoHost.Visibility = Visibility.Visible;
-                EmptyState.Visibility = Visibility.Collapsed;
-                UpdateVideoLayout();
+                if (process.HasExited) return;
+                if (_embeddedWindow != IntPtr.Zero)
+                {
+                    if (IsWindow(_embeddedWindow)) continue;
+                    // Receiver can recreate its video window on reconnect.
+                    _embeddedWindow = IntPtr.Zero;
+                    _lastVideoWidth = _lastVideoHeight = -1;
+                    _resizeTimer.Stop();
+                    VideoHost.Visibility = Visibility.Collapsed;
+                    EmptyState.Visibility = Visibility.Visible;
+                    UpdateStatus("Waiting for receiver video window", Brushes.LightSkyBlue);
+                    waiting.Restart();
+                }
+
+                process.Refresh();
+                var hwnd = process.MainWindowHandle;
+                if (hwnd == IntPtr.Zero || !IsWindow(hwnd)) continue;
+
                 _videoPanel.CreateControl();
                 var style = GetWindowLongPtr(hwnd, GWL_STYLE).ToInt64();
                 var childStyle = (style | WS_CHILD) & ~(WS_POPUP | WS_CAPTION | WS_THICKFRAME);
                 SetWindowLongPtr(hwnd, GWL_STYLE, new IntPtr(childStyle));
                 var previousParent = SetParent(hwnd, _videoPanel.Handle);
                 if (previousParent == IntPtr.Zero && Marshal.GetLastWin32Error() != 0)
-                    throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), "Could not attach receiver window");
+                    throw new System.ComponentModel.Win32Exception(
+                        Marshal.GetLastWin32Error(), "Could not attach receiver window");
+
                 _embeddedWindow = hwnd;
+                _lastVideoWidth = _lastVideoHeight = -1;
+                VideoHost.Visibility = Visibility.Visible;
+                EmptyState.Visibility = Visibility.Collapsed;
                 UpdateVideoLayout();
-                ResizeVideo();
+                ResizeVideo(force: true);
                 UpdateStatus("Receiver embedded · F6 rotate layout", Brushes.LightGreen);
-                return;
             }
+            catch (InvalidOperationException) when (launch != _launchId) { return; }
+            catch (ObjectDisposedException) { return; }
             catch (Exception ex)
             {
+                _embeddedWindow = IntPtr.Zero;
                 VideoHost.Visibility = Visibility.Collapsed;
                 EmptyState.Visibility = Visibility.Visible;
                 UpdateStatus("Embedding failed", Brushes.OrangeRed);
@@ -194,12 +242,12 @@ public partial class MainWindow : Window
                 return;
             }
         }
-        if (launch == _launchId && !process.HasExited)
-            UpdateStatus("Receiver running (window not found)", Brushes.Orange);
     }
     private void StopReceiver()
     {
         ++_launchId;
+        _resizeTimer.Stop();
+        _lastVideoWidth = _lastVideoHeight = -1;
         _embeddedWindow = IntPtr.Zero;
         VideoHost.Visibility = Visibility.Collapsed;
         EmptyState.Visibility = Visibility.Visible;
