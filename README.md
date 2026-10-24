@@ -95,3 +95,14 @@ The Beta 0.3 branch has its own Windows build workflow. Test the manager and mir
 5. If WinGet is unavailable, click **Manual download** and install from the third-party releases page, then click **Scan again**.
 
 No receiver installation starts automatically when Airo launches. Airo cannot guarantee that every Windows system has WinGet or that every UxPlay release has an available WinGet package. The receiver's installer may be unsigned; verify the publisher and source before proceeding.
+
+### Receiver Manager reliability update
+
+Receiver Manager now treats **installation state** separately from **WinGet command status**:
+- When an EXE is detected, **Install receiver** is disabled and **Update receiver** is available.
+- When no EXE is detected, **Install receiver** is available and **Update receiver** is disabled.
+- After a WinGet operation, Airo scans for the EXE again and shows a human-readable result.
+- WinGet exit code `0x8A150014` (`-1978335212`) means **no matching packages found**, not necessarily a broken installation. If Airo still detects the EXE, it tells the user the receiver can continue to be used.
+- The manager includes **Installation diagnostics** and **Copy diagnostics** to help troubleshoot WinGet source/package mismatches without relying on raw modal error dialogs.
+
+This change does not uninstall, repair, or replace an existing receiver. It does not prove that an installed EXE is managed by WinGet; users who installed via MSI manually may need to update using **Manual download**. WinGet package availability is not guaranteed.
