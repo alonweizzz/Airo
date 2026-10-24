@@ -62,11 +62,10 @@ Beta 0.2.1 is developed on the `beta-0.2.1` branch so the known-working Beta 0.2
 
 The Settings dock button now opens a real settings window. You can:
 - Select/change the installed UxPlay receiver executable.
-- Automatically start the receiver when Airo launches (off by default).
 - Open Airo maximized (off by default).
 - Keep Airo above other windows (off by default).
 - Select portrait or 16:9 wide video layout as the default; F6 still toggles during a session.
 
-Settings are saved to `%LOCALAPPDATA%\\Airo\\settings.json` and loaded on the next launch. On first use, Airo imports the previously selected UxPlay path from `receiver-path.txt`. The receiver is **not** bundled and mirroring still depends on the installed third-party receiver. Auto-start only starts that executable; it does not guarantee a successful AirPlay connection.
+Settings are saved to `%LOCALAPPDATA%\\Airo\\settings.json` and loaded on the next launch. On first use, Airo imports the previously selected UxPlay path from `receiver-path.txt`. The receiver is **not** bundled and mirroring still depends on the installed third-party receiver. The receiver starts only when you use the Devices button; automatic receiver startup is intentionally disabled.
 
-To test this branch, download the `beta-0.2.1` branch and run `dotnet run --project Airo/Airo.csproj`. Verify startup settings, changing layouts, and the saved receiver path before merging to main.
+To test this branch, download the `beta-0.2.1` branch and run `dotnet run --project Airo/Airo.csproj`. Verify startup window settings, changing layouts, and the saved receiver path before merging to main.
