@@ -234,8 +234,8 @@ public sealed class ReceiverManagerWindow : Wpf.Window
         if (_installationRunning) return;
         var operation = update ? "update" : "install";
         var choice = Wpf.MessageBox.Show(this,
-            $"Airo will ask Windows Package Manager (WinGet) to {operation} UxPlay from package 'leapbtw.uxplay' in the winget source.\\n\\n" +
-            "The package comes from a third-party publisher. WinGet will download it and may display installer and administrator prompts. Package and source agreements will be accepted for this operation.\\n\\nContinue?",
+            $"Airo will ask Windows Package Manager (WinGet) to {operation} UxPlay from package 'leapbtw.uxplay' in the winget source.\n\n" +
+            "The package comes from a third-party publisher. WinGet will download it and may display installer and administrator prompts. Package and source agreements will be accepted for this operation.\n\nContinue?",
             "Confirm receiver " + operation, Wpf.MessageBoxButton.YesNo, Wpf.MessageBoxImage.Question);
         if (choice != Wpf.MessageBoxResult.Yes) return;
 
@@ -277,7 +277,7 @@ public sealed class ReceiverManagerWindow : Wpf.Window
             {
                 _details.Text = $"WinGet exited with code {exitCode}. Check installation prompts, then scan again or use Manual download.";
                 Wpf.MessageBox.Show(this,
-                    $"Windows Package Manager did not report success (exit code {exitCode}). The receiver was not changed by Airo.",
+                    $"Windows Package Manager did not report success (exit code {exitCode}). The installation may be incomplete; check the receiver status.",
                     "Receiver setup", Wpf.MessageBoxButton.OK, Wpf.MessageBoxImage.Warning);
             }
         }
