@@ -34,6 +34,9 @@ public partial class MainWindow : Window
     private IntPtr _embeddedWindow;
     private readonly Forms.Panel _videoPanel = new() { BackColor = System.Drawing.Color.Black };
     private int _launchId;
+    private bool _receiverStarting;
+    private int _embedRetryCount;
+    private const int MaxEmbedRetries = 3;
     private readonly DispatcherTimer _resizeTimer = new() { Interval = TimeSpan.FromMilliseconds(40) };
     private readonly DispatcherTimer _resizeDeadline = new() { Interval = TimeSpan.FromMilliseconds(200) };
     private int _lastVideoWidth = -1, _lastVideoHeight = -1;
@@ -174,7 +177,9 @@ public partial class MainWindow : Window
     private void Home_Click(object sender, RoutedEventArgs e) { }
     private async void Devices_Click(object sender, RoutedEventArgs e)
     {
-        if (_receiver is { HasExited: false })
+        // A double click must not start two competing UxPlay instances.
+        if (_receiverStarting) return;
+        if (_receiver is not null && IsRunning(_receiver))
         {
             if (MessageBox.Show("Stop the receiver?", "Airo", MessageBoxButton.YesNo) == MessageBoxResult.Yes) StopReceiver();
             return;
@@ -186,6 +191,7 @@ public partial class MainWindow : Window
             _receiverPath = manager.SelectedReceiverPath;
             _settings.ReceiverPath = _receiverPath;
         }
+        _receiverStarting = true;
         try
         {
             var process = new Process
@@ -224,7 +230,9 @@ public partial class MainWindow : Window
                 catch (InvalidOperationException) { process.Dispose(); }
             };
             if (!process.Start()) throw new InvalidOperationException("Receiver did not start.");
+            _embedRetryCount = 0;
             UpdateStatus("Waiting for receiver window", Brushes.LightSkyBlue);
+            _receiverStarting = false;
             await AttachWhenReady(process, launch);
         }
         catch (Exception ex)
@@ -233,6 +241,16 @@ public partial class MainWindow : Window
             UpdateStatus("Receiver launch failed", Brushes.OrangeRed);
             MessageBox.Show(ex.Message, "Airo", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+        finally
+        {
+            _receiverStarting = false;
+        }
+    }
+    private static bool IsRunning(Process process)
+    {
+        try { return !process.HasExited; }
+        catch (InvalidOperationException) { return false; }
+        catch (ObjectDisposedException) { return false; }
     }
     private async Task AttachWhenReady(Process process, int launch)
     {
@@ -246,7 +264,7 @@ public partial class MainWindow : Window
             if (launch != _launchId) return;
             try
             {
-                if (process.HasExited) return;
+                if (!IsRunning(process)) return;
                 if (_embeddedWindow != IntPtr.Zero)
                 {
                     if (IsWindow(_embeddedWindow)) continue;
@@ -258,6 +276,7 @@ public partial class MainWindow : Window
                     VideoHost.Visibility = Visibility.Collapsed;
                     EmptyState.Visibility = Visibility.Visible;
                     UpdateStatus("Waiting for receiver video window", Brushes.LightSkyBlue);
+                    _embedRetryCount = 0;
                     waiting.Restart();
                 }
 
@@ -269,10 +288,13 @@ public partial class MainWindow : Window
                 var style = GetWindowLongPtr(hwnd, GWL_STYLE).ToInt64();
                 var childStyle = (style | WS_CHILD) & ~(WS_POPUP | WS_CAPTION | WS_THICKFRAME);
                 SetWindowLongPtr(hwnd, GWL_STYLE, new IntPtr(childStyle));
+                // SetLastError is required: SetParent can return zero when the old
+                // parent was the desktop, which is not itself a failure.
+                Marshal.SetLastPInvokeError(0);
                 var previousParent = SetParent(hwnd, _videoPanel.Handle);
-                if (previousParent == IntPtr.Zero && Marshal.GetLastWin32Error() != 0)
+                if (previousParent == IntPtr.Zero && Marshal.GetLastPInvokeError() != 0)
                     throw new System.ComponentModel.Win32Exception(
-                        Marshal.GetLastWin32Error(), "Could not attach receiver window");
+                        Marshal.GetLastPInvokeError(), "Could not attach receiver window");
 
                 _embeddedWindow = hwnd;
                 _lastVideoWidth = _lastVideoHeight = -1;
@@ -289,6 +311,7 @@ public partial class MainWindow : Window
                     _resizeDeadline.Stop();
                     ResizeVideo(force: true);
                     ScheduleVideoResize();
+                    _embedRetryCount = 0;
                     UpdateStatus("Receiver embedded · F6 layout · F7 refresh", Brushes.LightGreen);
                 }, DispatcherPriority.Loaded);
             }
@@ -297,10 +320,20 @@ public partial class MainWindow : Window
             catch (Exception ex)
             {
                 _embeddedWindow = IntPtr.Zero;
+                _resizeTimer.Stop();
+                _resizeDeadline.Stop();
+                _lastVideoWidth = _lastVideoHeight = -1;
                 VideoHost.Visibility = Visibility.Collapsed;
                 EmptyState.Visibility = Visibility.Visible;
-                UpdateStatus("Embedding failed", Brushes.OrangeRed);
-                MessageBox.Show("Receiver is running, but embedding failed: " + ex.Message, "Airo");
+                if (++_embedRetryCount < MaxEmbedRetries && IsRunning(process))
+                {
+                    UpdateStatus($"Video attach retry {_embedRetryCount}/{MaxEmbedRetries}", Brushes.Orange);
+                    await Task.Delay(600);
+                    continue;
+                }
+                UpdateStatus("Embedding failed · restart receiver", Brushes.OrangeRed);
+                MessageBox.Show("The receiver is running, but Airo could not display its window after several attempts: " +
+                    ex.Message + "\\n\\nStop and restart the receiver using Devices.", "Airo");
                 return;
             }
         }
@@ -316,7 +349,7 @@ public partial class MainWindow : Window
         EmptyState.Visibility = Visibility.Visible;
         var process = _receiver;
         _receiver = null;
-        try { if (process is { HasExited: false }) process.Kill(entireProcessTree: true); }
+        try { if (process is not null && IsRunning(process)) process.Kill(entireProcessTree: true); }
         catch { }
         // Process.Exited disposes the process asynchronously.
         UpdateStatus("Receiver offline", Brushes.Orange);
