@@ -10,6 +10,8 @@ public sealed class AiroSettings
     public bool StartMaximized { get; set; }
     public bool AlwaysOnTop { get; set; }
     public bool WideLayout { get; set; }
+    // Balanced (default) preserves the previously tested receiver command line.
+    public string VideoProfile { get; set; } = "Balanced";
 
     private static string SettingsFolder => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Airo");
