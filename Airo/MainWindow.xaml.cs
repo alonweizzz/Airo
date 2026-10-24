@@ -17,6 +17,8 @@ namespace Airo;
 public partial class MainWindow : Window
 {
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool IsWindow(IntPtr hwnd);
+    [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool RedrawWindow(IntPtr hwnd, IntPtr updateRect, IntPtr updateRegion, uint flags);
+    private const uint RDW_INVALIDATE = 0x0001, RDW_UPDATENOW = 0x0100, RDW_ALLCHILDREN = 0x0080;
     [DllImport("user32.dll", SetLastError = true)] private static extern IntPtr SetParent(IntPtr child, IntPtr parent);
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW", SetLastError = true)] private static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW", SetLastError = true)] private static extern IntPtr SetWindowLongPtr(IntPtr hwnd, int index, IntPtr value);
@@ -33,6 +35,7 @@ public partial class MainWindow : Window
     private readonly Forms.Panel _videoPanel = new() { BackColor = System.Drawing.Color.Black };
     private int _launchId;
     private readonly DispatcherTimer _resizeTimer = new() { Interval = TimeSpan.FromMilliseconds(40) };
+    private readonly DispatcherTimer _resizeDeadline = new() { Interval = TimeSpan.FromMilliseconds(200) };
     private int _lastVideoWidth = -1, _lastVideoHeight = -1;
     private bool _wideLayout;
     // iPhone portrait screens are taller than 9:16; use a closer 9:19.5 viewport.
@@ -44,7 +47,8 @@ public partial class MainWindow : Window
         InitializeComponent();
         VideoHost.Child = _videoPanel;
         _videoPanel.Resize += (_, _) => ScheduleVideoResize();
-        _resizeTimer.Tick += (_, _) => { _resizeTimer.Stop(); ResizeVideo(); };
+        _resizeTimer.Tick += (_, _) => FlushVideoResize();
+        _resizeDeadline.Tick += (_, _) => FlushVideoResize();
         DisplaySurface.SizeChanged += (_, _) => UpdateVideoLayout();
         PreviewKeyDown += (_, e) =>
         {
@@ -52,6 +56,12 @@ public partial class MainWindow : Window
             {
                 _wideLayout = !_wideLayout;
                 UpdateVideoLayout();
+                ForceVideoRefresh();
+                e.Handled = true;
+            }
+            else if (e.Key == System.Windows.Input.Key.F7)
+            {
+                ForceVideoRefresh();
                 e.Handled = true;
             }
         };
@@ -89,10 +99,11 @@ public partial class MainWindow : Window
     }
     private void UpdateVideoLayout()
     {
-        // Fit the complete receiver viewport without stretching it or cropping.
-        // WPF measures in device-independent pixels; WinForms handles native pixels.
-        var width = Math.Max(1, DisplaySurface.ActualWidth - 24);
-        var height = Math.Max(1, DisplaySurface.ActualHeight - 24);
+        // Fit within the available WPF area without cropping or non-uniform stretching.
+        // The receiver controls the actual decoded video resolution and frame rate.
+        if (DisplaySurface.ActualWidth <= 24 || DisplaySurface.ActualHeight <= 24) return;
+        var width = DisplaySurface.ActualWidth - 24;
+        var height = DisplaySurface.ActualHeight - 24;
         var aspect = _wideLayout ? LandscapeAspect : PortraitAspect;
         var fittedWidth = Math.Min(width, height * aspect);
         var fittedHeight = fittedWidth / aspect;
@@ -108,20 +119,45 @@ public partial class MainWindow : Window
         // Coalesce rapid resize events instead of repeatedly resizing the native renderer.
         _resizeTimer.Stop();
         _resizeTimer.Start();
+        // Ensure a continuous window drag still gets periodic native size updates.
+        if (!_resizeDeadline.IsEnabled) _resizeDeadline.Start();
+    }
+    private void FlushVideoResize()
+    {
+        _resizeTimer.Stop();
+        _resizeDeadline.Stop();
+        ResizeVideo();
+    }
+    private void ForceVideoRefresh()
+    {
+        if (_embeddedWindow == IntPtr.Zero || !IsWindow(_embeddedWindow)) return;
+        _resizeTimer.Stop();
+        _resizeDeadline.Stop();
+        // F6 changes the aspect ratio; arrange the host before forcing native sizing.
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            if (_embeddedWindow == IntPtr.Zero || !IsWindow(_embeddedWindow)) return;
+            VideoHost.UpdateLayout();
+            ResizeVideo(force: true);
+            RedrawWindow(_embeddedWindow, IntPtr.Zero, IntPtr.Zero,
+                RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN);
+        }), DispatcherPriority.Loaded);
     }
     private void ResizeVideo(bool force = false)
     {
-        if (_embeddedWindow == IntPtr.Zero || _videoPanel.IsDisposed) return;
+        if (_embeddedWindow == IntPtr.Zero || _videoPanel.IsDisposed || !IsWindow(_embeddedWindow)) return;
         var width = _videoPanel.ClientSize.Width;
         var height = _videoPanel.ClientSize.Height;
         if (width <= 0 || height <= 0) return;
         if (!force && width == _lastVideoWidth && height == _lastVideoHeight) return;
         // SWP_FRAMECHANGED is needed after reparenting, not on every mouse movement.
-        SetWindowPos(_embeddedWindow, IntPtr.Zero, 0, 0, width, height,
+        if (SetWindowPos(_embeddedWindow, IntPtr.Zero, 0, 0, width, height,
             SWP_NOZORDER | SWP_NOACTIVATE | SWP_SHOWWINDOW |
-            (force ? SWP_FRAMECHANGED : 0));
-        _lastVideoWidth = width;
-        _lastVideoHeight = height;
+            (force ? SWP_FRAMECHANGED : 0)))
+        {
+            _lastVideoWidth = width;
+            _lastVideoHeight = height;
+        }
     }
     private void Home_Click(object sender, RoutedEventArgs e) { }
     private async void Devices_Click(object sender, RoutedEventArgs e)
@@ -161,6 +197,7 @@ public partial class MainWindow : Window
                         if (launch == _launchId)
                         {
                             _resizeTimer.Stop();
+                            _resizeDeadline.Stop();
                             _embeddedWindow = IntPtr.Zero;
                             _lastVideoWidth = _lastVideoHeight = -1;
                             VideoHost.Visibility = Visibility.Collapsed;
@@ -205,6 +242,7 @@ public partial class MainWindow : Window
                     _embeddedWindow = IntPtr.Zero;
                     _lastVideoWidth = _lastVideoHeight = -1;
                     _resizeTimer.Stop();
+                    _resizeDeadline.Stop();
                     VideoHost.Visibility = Visibility.Collapsed;
                     EmptyState.Visibility = Visibility.Visible;
                     UpdateStatus("Waiting for receiver video window", Brushes.LightSkyBlue);
@@ -236,9 +274,10 @@ public partial class MainWindow : Window
                     if (launch != _launchId || _embeddedWindow != hwnd) return;
                     VideoHost.UpdateLayout();
                     _resizeTimer.Stop();
+                    _resizeDeadline.Stop();
                     ResizeVideo(force: true);
                     ScheduleVideoResize();
-                    UpdateStatus("Receiver embedded · F6 rotate layout", Brushes.LightGreen);
+                    UpdateStatus("Receiver embedded · F6 layout · F7 refresh", Brushes.LightGreen);
                 }, DispatcherPriority.Loaded);
             }
             catch (InvalidOperationException) when (launch != _launchId) { return; }
@@ -258,6 +297,7 @@ public partial class MainWindow : Window
     {
         ++_launchId;
         _resizeTimer.Stop();
+        _resizeDeadline.Stop();
         _lastVideoWidth = _lastVideoHeight = -1;
         _embeddedWindow = IntPtr.Zero;
         VideoHost.Visibility = Visibility.Collapsed;
