@@ -10,7 +10,6 @@ namespace Airo;
 public sealed class SettingsWindow : Wpf.Window
 {
     private readonly Controls.TextBox _receiverPath;
-    private readonly Controls.CheckBox _autoStart;
     private readonly Controls.CheckBox _startMaximized;
     private readonly Controls.CheckBox _alwaysOnTop;
     private readonly Controls.ComboBox _layout;
@@ -137,9 +136,6 @@ public sealed class SettingsWindow : Wpf.Window
         };
 
         body.Children.Add(Label("Startup", 17, true));
-        _autoStart = Toggle("Start the AirPlay receiver when Airo opens", current.AutoStartReceiver);
-        body.Children.Add(_autoStart);
-        body.Children.Add(Hint("If enabled, Airo starts your saved receiver automatically. You can still stop it with Devices."));
         _startMaximized = Toggle("Open Airo maximized", current.StartMaximized);
         body.Children.Add(_startMaximized);
         _alwaysOnTop = Toggle("Keep Airo above other windows", current.AlwaysOnTop);
@@ -163,17 +159,9 @@ public sealed class SettingsWindow : Wpf.Window
 
     private void Save()
     {
-        if (_autoStart.IsChecked == true && !File.Exists(_receiverPath.Text))
-        {
-            Wpf.MessageBox.Show(this,
-                "Select a valid receiver EXE before enabling automatic startup.",
-                "Airo settings", Wpf.MessageBoxButton.OK, Wpf.MessageBoxImage.Warning);
-            return;
-        }
         var next = new AiroSettings
         {
             ReceiverPath = _receiverPath.Text.Trim(),
-            AutoStartReceiver = _autoStart.IsChecked == true,
             StartMaximized = _startMaximized.IsChecked == true,
             AlwaysOnTop = _alwaysOnTop.IsChecked == true,
             WideLayout = _layout.SelectedIndex == 1
