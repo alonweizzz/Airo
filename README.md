@@ -51,3 +51,7 @@ This is **not** a bundled AirPlay implementation: no receiver executable is incl
 Click Devices to start the configured UxPlay executable, then connect your iPhone. Airo polls for the process main window for up to two minutes and attempts to reparent that window into the central area. This is an experimental Win32 approach, not native video decoding. Some receiver builds create windows in child processes or use graphics modes incompatible with reparenting; these may remain separate or fail to display. The status "Receiver window embedded" indicates only that the window handle was reparented, **not** that AirPlay is connected or frames are rendering correctly. Stop the receiver using Devices before exiting Airo. Test audio separately.
 
 No binaries or third-party dependencies are redistributed. Review the receiver license before packaging it with Airo.
+
+### Native receiver viewport sizing (Beta 0.2)
+
+Airo now sizes both the WPF video host and the embedded native UxPlay window to a centered aspect-ratio viewport. Portrait defaults to approximately 9:19.5 (typical modern iPhone); press **F6** to switch to a 16:9 landscape viewport, or back again. Native resizing uses `SetWindowPos` with `SWP_FRAMECHANGED` so the external window recalculates its frame after embedding. This is still experimental: UxPlay may draw its own letterboxing or use a different source aspect ratio, which Airo cannot reliably remove by resizing its host window. Verify both orientations and audio on the target Windows PC.
