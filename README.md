@@ -1,200 +1,108 @@
+<div align="center">
+
+<img src="Airo/assets/AiroLogo.png" alt="Airo logo" width="116" />
+
 # Airo
 
-Airo is a Windows screen-mirroring project for iPhone AirPlay.
+**Your iPhone screen. Beautifully mirrored on Windows.**
 
-**Status: Beta 0.2 experimental external receiver window embedding. Airo does not implement the AirPlay protocol itself.**
+A modern, minimal AirPlay screen-mirroring companion for Windows, designed around a clean interface and a smooth everyday experience.
 
-## Start
+**Windows · iPhone · AirPlay · Open-source project**
 
-Install the .NET 8 SDK on Windows and run:
+[Explore the current beta](#what-airo-can-do) · [Get started](#get-started) · [The roadmap](#whats-next)
+
+</div>
+
+---
+
+## Meet Airo
+
+Airo makes it easy to bring your iPhone screen into a dedicated Windows desktop window. It combines an external AirPlay receiver with a purpose-built interface, so connecting, viewing, and managing your receiver feels like part of one app.
+
+The current design direction blends **Windows 11 Fluent aesthetics**, **glass-inspired surfaces**, and **Airo's signature blue**.
+
+> **Development status:** Airo is an evolving beta. The `beta-0.4-ui` branch is a UI preview; some visual elements and features are still in development.
+
+## What Airo can do
+
+| Experience | Current capabilities |
+| --- | --- |
+| **iPhone screen mirroring** | Display the receiver's video window inside Airo on your Windows PC. |
+| **Receiver Manager** | Find an installed UxPlay receiver, select its executable, or launch an optional WinGet installation/update after confirmation. |
+| **Flexible viewing** | Switch between portrait and landscape layouts, resize the window, and request a viewport refresh. |
+| **Video preferences** | Choose Balanced, Smooth, or Responsive receiver profiles to experiment with fluidity and latency. |
+| **Personal settings** | Save receiver location, preferred layout, startup window behavior, and always-on-top preference. |
+| **Modern desktop UI** | Dark blue styling, rounded controls, a floating bottom dock, and the new Airo logo. |
+
+**Quick controls:** `F6` switches layout; `F7` refreshes the embedded video viewport.
+
+Airo hosts an **external UxPlay receiver**; it does not implement AirPlay decoding itself. The actual image quality, connection reliability, and latency also depend on your iPhone, network, and the installed receiver.
+
+## Get started
+
+### Requirements
+
+- A Windows PC with the **.NET 8 SDK** to build/run from source.
+- An iPhone and PC on the same local network.
+- A compatible **UxPlay Windows receiver** installed separately. You can manage the receiver from Airo's Receiver Manager.
+
+### Run the app
+
+Clone or download this branch, open a terminal in the repository root, and run:
 
 ```powershell
 dotnet run --project Airo/Airo.csproj
 ```
 
-To publish a Windows x64 executable:
+Then:
+
+1. Open **Devices** in Airo's floating dock to configure or start the receiver.
+2. If needed, open **Settings → Receiver Manager** to detect or install a compatible receiver.
+3. On your iPhone, open **Control Center → Screen Mirroring** and choose the name advertised by your receiver.
+4. Your screen should appear in Airo once UxPlay opens its video window.
+
+To create a Windows x64 build from source:
 
 ```powershell
 dotnet publish Airo/Airo.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
 ```
 
-## Versioning
+If your iPhone cannot discover the receiver, check that both devices share the same network and that Bonjour/mDNS and Windows Firewall are not blocking discovery.
 
-All development builds use **Airo Beta 0.x**. The first stable release will be **Airo 1.0**, after AirPlay compatibility and stability have been tested.
+## What's next
 
-## Roadmap
+Our goal is to make Airo feel like a polished, native Windows app while preserving the working mirroring experience.
 
-- [x] Dark-themed Windows UI shell
-- [x] Launch an externally installed AirPlay receiver on Windows\n- [ ] Validate experimental receiver window embedding on Windows
-- [ ] Show connection status and mirrored picture/audio
-- [ ] Fullscreen, recordings, screenshots
-- [ ] Localization and UI refinements
+| Focus | Direction |
+| --- | --- |
+| **Beta 0.4 — A new look** | Refine the glass-inspired UI, settings, floating dock, subtle transitions, and visual consistency. **In progress.** |
+| **Smarter mirroring** | Explore better display-fit options, orientation handling, reconnection feedback, and clearer connection status. **Planned.** |
+| **Everyday tools** | Investigate screenshots, recording, fullscreen viewing, and more convenient controls. **Planned.** |
+| **More control** | Explore diagnostics, optional performance insights, improved receiver management, and future customization. **Planned.** |
+| **Toward 1.0** | Prioritize compatibility, stability, installer quality, accessibility, and a dependable user experience before calling Airo stable. **Long-term goal.** |
 
-AirPlay engine licensing and compatibility need review before distribution. Airo is not affiliated with Apple.
+*Roadmap items represent goals, not promises or confirmed release dates.*
 
-## Experimental receiver launcher
+## Built for a simple experience
 
-The Devices dock button can select and launch an **external** Windows AirPlay receiver executable. Settings lets you change its path. The path is stored under `%LOCALAPPDATA%\\Airo\\receiver-path.txt`. Closing Airo terminates the receiver process it launched.
+Airo is developed using **C#**, **.NET 8**, and **WPF**. Its interface uses Windows desktop technologies, while screen reception currently relies on a separately installed UxPlay executable.
 
-This is **not** a bundled AirPlay implementation: no receiver executable is included, window embedding is experimental and may fail with some receiver builds, and a running process does not prove iPhone discovery or connection. Use only trusted receiver binaries and verify compatibility/licensing yourself. For an open-source option to investigate, see UxPlay; Windows builds and runtime dependencies require separate verification.
+We develop experimental improvements in dedicated branches to protect versions already tested with real iPhone mirroring. The **`beta-0.4-ui`** branch focuses on interface work; the tested receiver and streaming behavior remains the baseline.
 
-### Manual test
+## Important notes
 
-1. Obtain a compatible, trusted Windows receiver build separately.
-2. Run Airo, click the Devices icon and select the receiver EXE.
-3. Check that its own window starts successfully.
-4. Connect iPhone and PC to the same local network, open iPhone Control Center → Screen Mirroring, and look for the receiver's advertised name.
-5. If it does not appear, verify Bonjour/mDNS support, network isolation, Windows firewall permissions, and receiver logs. Airo currently cannot diagnose those issues automatically.
+- **Beta software:** Some receiver builds, Windows configurations, and network setups may behave differently.
+- **External receiver:** Airo does not bundle UxPlay. Receiver installation or updates through WinGet require user confirmation; check the source and license of any third-party software you install.
+- **Not affiliated with Apple:** Airo is an independent project and is not endorsed by Apple.
+- **Experimental features:** Video performance profiles are optional and do not guarantee a particular FPS or latency.
 
-## Beta 0.2 window embedding test
+---
 
-Click Devices to start the configured UxPlay executable, then connect your iPhone. Airo polls for the process main window for up to two minutes and attempts to reparent that window into the central area. This is an experimental Win32 approach, not native video decoding. Some receiver builds create windows in child processes or use graphics modes incompatible with reparenting; these may remain separate or fail to display. The status "Receiver window embedded" indicates only that the window handle was reparented, **not** that AirPlay is connected or frames are rendering correctly. Stop the receiver using Devices before exiting Airo. Test audio separately.
+<div align="center">
 
-No binaries or third-party dependencies are redistributed. Review the receiver license before packaging it with Airo.
+### Airo — Mirror simply. Make it yours.
 
-### Native receiver viewport sizing (Beta 0.2)
+**Made for Windows. Designed around your iPhone.**
 
-Airo now sizes both the WPF video host and the embedded native UxPlay window to a centered aspect-ratio viewport. Portrait defaults to approximately 9:19.5 (typical modern iPhone); press **F6** to switch to a 16:9 landscape viewport, or back again. Native resizing uses `SetWindowPos` with `SWP_FRAMECHANGED` so the external window recalculates its frame after embedding. This is still experimental: UxPlay may draw its own letterboxing or use a different source aspect ratio, which Airo cannot reliably remove by resizing its host window. Verify both orientations and audio on the target Windows PC.
-
-## Beta 0.2.1 — Settings (development branch)
-
-Beta 0.2.1 is developed on the `beta-0.2.1` branch so the known-working Beta 0.2 remains unchanged on `main`.
-
-The Settings dock button now opens a real settings window. You can:
-- Select/change the installed UxPlay receiver executable.
-- Open Airo maximized (off by default).
-- Keep Airo above other windows (off by default).
-- Select portrait or 16:9 wide video layout as the default; F6 still toggles during a session.
-
-Settings are saved to `%LOCALAPPDATA%\\Airo\\settings.json` and loaded on the next launch. On first use, Airo imports the previously selected UxPlay path from `receiver-path.txt`. The receiver is **not** bundled and mirroring still depends on the installed third-party receiver. The receiver starts only when you use the Devices button; automatic receiver startup is intentionally disabled.
-
-To test this branch, download the `beta-0.2.1` branch and run `dotnet run --project Airo/Airo.csproj`. Verify startup window settings, changing layouts, and the saved receiver path before merging to main.
-
-## Beta 0.3 — Receiver Manager (preview branch)
-
-Beta 0.3 is being developed on `beta-0.3` based on the tested `beta-0.2.1` settings branch; neither `main` nor `beta-0.2.1` was changed.
-
-Open **Settings → Receiver Manager** to:
-- Check the saved receiver path and common Windows installation directories.
-- See the executable's embedded file version, when provided by Windows.
-- Select a receiver EXE manually and save it for Airo.
-- Install or update the receiver from inside Airo using Windows Package Manager (WinGet), with an explicit confirmation before each operation.\n- Open the [third-party uxplay-windows releases](https://github.com/leapbtw/uxplay-windows/releases) page as a manual fallback if WinGet is unavailable.
-
-When the Devices button is used without a valid receiver, Airo now opens Receiver Manager instead of a bare file picker.
-
-**Safety and scope:** The Manager only checks file existence and file metadata; it does not claim that AirPlay is connected or that a receiver build is trustworthy. The Install and Update buttons call WinGet for the exact `leapbtw.uxplay` package from the `winget` source **only after explicit confirmation**. WinGet downloads and launches the third-party installer and may request administrator permission. Airo itself does not bundle, download or directly execute third-party installer binaries. The manager rescans after WinGet exits; click **Use this receiver** to save the detected EXE. If WinGet is missing, use the manual releases-page fallback. Verify provenance, Windows compatibility, license and installer integrity before distributing a bundled installer in a future release.
-
-The Beta 0.3 branch has its own Windows build workflow. Test the manager and mirroring on Windows before merging.
-
-### Test in-app receiver installation
-
-1. Open Settings → Receiver Manager. Confirm your existing receiver still appears.
-2. Click **Install receiver** (or **Update receiver** if already installed). Read the publisher/package confirmation before approving.
-3. Complete any Windows installer/UAC prompts. Airo waits for WinGet to finish and then scans the installed receiver again.
-4. Click **Use this receiver** to save its executable path. Verify that Devices still launches the working receiver and mirroring continues to work.
-5. If WinGet is unavailable, click **Manual download** and install from the third-party releases page, then click **Scan again**.
-
-No receiver installation starts automatically when Airo launches. Airo cannot guarantee that every Windows system has WinGet or that every UxPlay release has an available WinGet package. The receiver's installer may be unsigned; verify the publisher and source before proceeding.
-
-### Receiver Manager reliability update
-
-Receiver Manager now treats **installation state** separately from **WinGet command status**:
-- When an EXE is detected, **Install receiver** is disabled and **Update receiver** is available.
-- When no EXE is detected, **Install receiver** is available and **Update receiver** is disabled.
-- After a WinGet operation, Airo scans for the EXE again and shows a human-readable result.
-- WinGet exit code `0x8A150014` (`-1978335212`) means **no matching packages found**, not necessarily a broken installation. If Airo still detects the EXE, it tells the user the receiver can continue to be used.
-- The manager includes **Installation diagnostics** and **Copy diagnostics** to help troubleshoot WinGet source/package mismatches without relying on raw modal error dialogs.
-
-This change does not uninstall, repair, or replace an existing receiver. It does not prove that an installed EXE is managed by WinGet; users who installed via MSI manually may need to update using **Manual download**. WinGet package availability is not guaranteed.
-
-## Beta 0.3 — Performance preview
-
-The `beta-0.3-performance` branch preserves the tested Receiver Manager from `beta-0.3` while refining the native video-host lifecycle.
-
-- **Faster initial video-window attachment:** checks every 250 ms for the first 30 seconds instead of every 1000 ms. The receiver still starts only when Devices is clicked.
-- **Lower idle polling overhead:** after 30 seconds without a window, checks every 750 ms; after attachment, checks the window every second.
-- **Late connections:** continues waiting for the video window beyond the former two-minute cutoff.
-- **Window recreation:** if the embedded window disappears while the receiver process is still running, Airo returns to waiting and attempts to attach a replacement window.
-- **Less native resize work:** coalesces frequent panel resizes into a 40 ms update and skips identical sizes. The expensive `SWP_FRAMECHANGED` flag is applied only on the initial attach, not on every resize.
-- **Cleanup:** stopping the receiver cancels pending attachment attempts and scheduled resizes.
-
-These changes aim to reduce host UI overhead and improve attach responsiveness. They **do not** modify UxPlay's encoding/decoding pipeline or guarantee lower AirPlay streaming latency or CPU usage. Verify screen mirroring, F6 layout switching, resizing, long idle waits, and receiver stop/restart on Windows before merging.
-
-### Hotfix — blank embedded video
-
-Fixed a regression in the performance preview where WPF's initially unset `WindowsFormsHost.Width` and `Height` are `double.NaN`. The optimized size comparison previously skipped the initial dimensions entirely, so the receiver could report "embedded" with an empty viewport. The host now explicitly initializes dimensions when unset and performs the initial native resize after WPF's layout pass. Re-test iPhone mirroring, F6 and window resizing. This fix has not yet been verified on the target Windows machine.
-
-## Beta 0.3 — Video stability and layout preview
-
-Development branch: `beta-0.3-video-stability` (based on the user's working `beta-0.3-performance` preview). Previous branches are unchanged.
-
-### Improvements
-
-- **Portrait / landscape:** use **Layout** in the header or **F6**. The host fits a 9:19.5 portrait or 16:9 landscape viewport inside the available area without intentional cropping or non-uniform scaling. A layout change schedules a forced native resize and redraw after WPF has arranged the host.
-- **Black / stale embedded viewport recovery:** use **Refresh** in the header or **F7**. This forces the existing native receiver window to recompute its client area and requests a redraw, without restarting or reinstalling UxPlay. This helps with stale host geometry; it cannot repair an upstream AirPlay decoder stall or missing stream frames.
-- **Resizing stability:** host updates are coalesced to reduce unnecessary native resize work, but an additional 200 ms deadline prevents continuous dragging from delaying all native resize updates.
-- **Native window safety:** verifies that the embedded handle still exists before native resizing and only caches dimensions after Windows reports a successful resize.
-- **Preserves reconnect logic:** if the receiver's video window is destroyed, the existing attachment loop waits for a replacement.
-
-### Test on Windows
-
-1. Start UxPlay from Devices and mirror an iPhone. Confirm picture and sound behavior are unchanged.
-2. Press **F6** repeatedly and use the **Layout** button; test both portrait and landscape with a maximized and restored Airo window.
-3. Drag the window edges continuously and confirm the video updates without getting stuck black.
-4. Press **F7** / **Refresh** if the viewport turns black; if the iPhone stream itself has stopped, reconnect the phone or restart the receiver.
-5. Stop/restart the receiver and reconnect after a delay. Confirm the Receiver Manager remains functional.
-
-**Scope:** This release targets the host's display quality and stability (fewer unnecessary native redraw/resize operations and consistent aspect fit). It does **not** change UxPlay's video codec, decoded stream resolution, or actual FPS; any future decoder quality controls require validating supported options of the installed receiver build. Build and runtime behavior still require verification on Windows.
-
-## Beta 0.3 — Receiver stability preview
-
-The `beta-0.3-stability` branch extends the previously tested video-stability branch without changing it.
-
-- Blocks duplicate receiver launches while a start attempt is in progress (for example, a rapid double-click on Devices).
-- Safely checks receiver process state even if Windows has already exited or disposed the process.
-- Retries up to three transient window-embedding failures instead of abandoning the connection on the first failed attempt; shows a clear message if all retries fail.
-- Clears stale native-window and resize state between failed attempts.
-- Resets the Win32 last-error value before `SetParent`, distinguishing an actual failure from a successful reparenting that returns a null previous parent.
-
-**Windows smoke test:** (1) Launch UxPlay with Devices, (2) double-click Devices rapidly and confirm only one receiver launches, (3) mirror the iPhone, (4) switch layout with F6 and refresh with F7, (5) stop and restart the receiver, (6) disconnect/reconnect the iPhone and confirm video returns. The branch is a preview and has not been verified on the user's Windows installation.
-
-## Beta 0.3 — Video quality / latency preview
-
-The `beta-0.3-video-quality` branch is based on the user's tested `beta-0.3-stability` branch. All previously tested branches are unchanged.
-
-Open **Settings → Video performance (experimental)** and select one of these receiver startup profiles:
-
-- **Balanced** (default): no additional UxPlay arguments; identical receiver startup behavior to the tested stability build.
-- **Smooth**: passes `-fps 60 -vsync` to request a higher maximum AirPlay framerate with timestamp-based A/V synchronization. The iPhone may still send fewer frames, and CPU usage may rise.
-- **Responsive**: passes `-vsync no` to test disabling timestamp-based synchronization, which can suit interactive mirroring on some desktop setups. It can cause different A/V synchronization behavior; it does not guarantee lower latency.
-
-These are **UxPlay command-line options**, not changes to the decoder, networking stack, resolution, or guaranteed frame rate. Availability depends on the exact Windows receiver build. Changes apply only to the next receiver start: stop the receiver with Devices and start it again after saving. If a preset fails or worsens playback, revert to Balanced.
-
-### Windows test checklist
-
-1. Confirm **Balanced** still mirrors with no regression, including portrait/landscape F6 and refresh F7.
-2. Stop the receiver, select **Smooth**, save, restart receiver and compare motion fluidity on the same iPhone content.
-3. Stop, select **Responsive**, save, restart, and compare input-to-display delay; check for audio/video desynchronization.
-4. Revert to **Balanced** and restart if either preset fails. Compare with identical Wi-Fi and phone conditions.
-
-Build and runtime behavior have not yet been verified on the user's Windows PC.
-
-## Beta 0.4 — UI design preview
-
-Development takes place in `beta-0.4-ui`, based on the user-tested `beta-0.3-video-quality` branch. This initial visual pass changes the main-window XAML only; the AirPlay receiver lifecycle, video profiles, and embedding logic are unchanged.
-
-- Modern blue-on-dark Fluent-inspired shell with layered translucent gradients, softened corners, and a brighter floating dock.
-- Consistent rounded Layout and Refresh buttons, polished receiver status badge, and a refined video stage.
-- Updated Beta 0.4 branding and more focused empty-state copy.
-- Uses built-in WPF brushes and shadows. **This is a frosted-glass visual approximation**, not Windows DWM backdrop blur or native Apple Liquid Glass.
-- No extra dependencies, new decoder, or new receiver arguments.
-
-### Windows UI smoke test
-
-1. Run `dotnet run --project Airo/Airo.csproj` on Windows.
-2. Check that the window renders at normal size and at its minimum size.
-3. Start the receiver from the dock; mirror an iPhone in portrait and landscape.
-4. Verify F6/Layout, F7/Refresh, Settings, Receiver Manager, and Video performance profiles.
-5. Confirm the floating dock remains visible and the video viewport resizes correctly.
-
-The GitHub Actions workflow builds this branch, but successful Windows rendering and mirroring still require local testing.
+</div>
