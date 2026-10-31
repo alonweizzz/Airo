@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#080e20" />
+  <meta name="description" content="Airo brings your iPhone screen to Windows. Explore the modern, glass-inspired AirPlay mirroring app and its future." />
+  <meta property="og:title" content="Airo — Your iPhone, on Windows" />
+  <meta property="og:description" content="A beautiful, modern companion for iPhone screen mirroring on Windows." />
+  <meta property="og:type" content="website" />
+  <title>Airo — Your iPhone, on Windows</title>
+  <link rel="icon" href="./assets/AiroLogo.png" type="image/png" />
+  <link rel="stylesheet" href="./styles.css" />
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <div class="ambient ambient-one" aria-hidden="true"></div><div class="ambient ambient-two" aria-hidden="true"></div>
+  <header class="topbar" id="top">
+    <nav class="nav glass" aria-label="Main navigation">
+      <a class="brand" href="#top" aria-label="Airo home"><img src="./assets/AiroLogo.png" alt="" width="40" height="40"><span>Airo<span class="brand-dot">.</span></span></a>
+      <div class="nav-links">
+        <a href="#features" data-i18n="navFeatures">Features</a>
+        <a href="#experience" data-i18n="navExperience">Experience</a>
+        <a href="#roadmap" data-i18n="navRoadmap">Roadmap</a>
+      </div>
+      <div class="nav-actions">
+        <button id="langToggle" class="icon-button" type="button" aria-label="Switch language">עב</button>
+        <button id="themeToggle" class="icon-button" type="button" aria-label="Toggle color theme" title="Toggle theme">☼</button>
+        <a class="button button-small button-primary nav-download" href="#download" data-i18n="navDownload">Get Airo <span aria-hidden="true">↗</span></a>
+        <button class="menu-button icon-button" id="menuToggle" type="button" aria-expanded="false" aria-controls="mobileMenu" aria-label="Open menu">☰</button>
+      </div>
+    </nav>
+    <div class="mobile-menu glass" id="mobileMenu" hidden>
+      <a href="#features" data-i18n="navFeatures">Features</a><a href="#experience" data-i18n="navExperience">Experience</a><a href="#roadmap" data-i18n="navRoadmap">Roadmap</a><a href="#download" data-i18n="navDownload">Get Airo</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero section-shell" aria-labelledby="heroTitle">
+      <div class="hero-content">
+        <div class="eyebrow"><span class="live-dot"></span><span data-i18n="heroBadge">INTRODUCING AIRO · BETA 0.4</span></div>
+        <h1 id="heroTitle" data-i18n-html="heroTitle">Your iPhone.<br><span class="gradient-text">On your Windows.</span></h1>
+        <p class="hero-lead" data-i18n="heroLead">Bring your screen into focus. Airo makes iPhone mirroring on Windows feel simple, elegant, and right at home.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#download"><span data-i18n="heroCta">Explore the beta</span><span class="arrow" aria-hidden="true">↗</span></a>
+          <a class="button button-secondary" href="https://github.com/alonweizzz/Airo/tree/beta-0.4-ui" target="_blank" rel="noopener noreferrer"><span data-i18n="viewCode">View on GitHub</span><span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="hero-notes"><span>✦ <span data-i18n="heroWindows">Made for Windows</span></span><span>◈ <span data-i18n="heroOpen">Open-source project</span></span></div>
+      </div>
+      <div class="hero-visual" aria-label="Illustration of the Airo desktop interface">
+        <div class="halo"></div>
+        <div class="app-window">
+          <div class="window-header"><div class="window-brand"><img src="./assets/AiroLogo.png" alt="" width="38" height="38"><div><strong>Airo</strong><small>BETA 0.4 · SCREEN MIRRORING</small></div></div><span class="status"><i></i> Receiver ready</span></div>
+          <div class="stage"><span class="stage-label">◉ LIVE VIEWPORT</span><div class="phone"><div class="phone-island"></div><div class="phone-screen"><div class="phone-glow"></div><div class="phone-time">09:41</div><div class="phone-caption">Airo</div><div class="phone-sub">Seamlessly connected.</div></div></div></div>
+          <div class="window-dock"><span>⌂</span><span class="dock-active">▣</span><span>◎</span><b></b><span>⚙</span><span>ⓘ</span></div>
+        </div>
+        <div class="float-pill float-pill-top"><span>✦</span><span data-i18n="pillSimple">Simple by design</span></div>
+        <div class="float-pill float-pill-bottom"><span>◉</span><span data-i18n="pillWindows">Airo for Windows</span></div>
+        <div class="visual-caption" data-i18n="conceptNote">Interface concept · not a live screenshot</div>
+      </div>
+    </section>
+
+    <section class="section-shell trust-strip" aria-label="Product highlights">
+      <span data-i18n="trustOne">Designed for Windows</span><i></i><span data-i18n="trustTwo">Built around AirPlay</span><i></i><span data-i18n="trustThree">A fresh take on mirroring</span>
+    </section>
+
+    <section class="section-shell section-spacing" id="features">
+      <div class="section-heading"><span class="kicker" data-i18n="featuresKicker">WHAT MAKES AIRO DIFFERENT</span><h2 data-i18n-html="featuresTitle">Everything you need.<br><span class="gradient-text">Nothing you don't.</span></h2><p data-i18n="featuresLead">Useful mirroring controls wrapped in an interface that stays out of your way.</p></div>
+      <div class="feature-grid">
+        <article class="feature-card glass feature-wide"><div class="feature-icon">▣</div><h3 data-i18n="feature1Title">Your screen, front and center.</h3><p data-i18n="feature1Desc">Mirror your iPhone through an external UxPlay receiver, displayed inside Airo's dedicated viewing space.</p><div class="mini-stage"><div class="mini-screen"></div><span>AIRO VIEWPORT</span></div></article>
+        <article class="feature-card glass"><div class="feature-icon">⌘</div><h3 data-i18n="feature2Title">Receiver, simplified.</h3><p data-i18n="feature2Desc">Find, configure, install, or update a compatible receiver with the built-in Receiver Manager.</p><span class="card-tag">RECEIVER MANAGER</span></article>
+        <article class="feature-card glass"><div class="feature-icon">⇄</div><h3 data-i18n="feature3Title">Fits your view.</h3><p data-i18n="feature3Desc">Switch between portrait and landscape, resize the window, and refresh the viewport when needed.</p><span class="card-tag">F6 · F7</span></article>
+        <article class="feature-card glass"><div class="feature-icon">⚡</div><h3 data-i18n="feature4Title">Choose your pace.</h3><p data-i18n="feature4Desc">Experiment with Balanced, Smooth, and Responsive receiver profiles to find what feels best.</p><span class="card-tag">VIDEO PROFILES</span></article>
+      </div>
+    </section>
+
+    <section class="section-shell section-spacing experience" id="experience"><div class="experience-card glass"><div class="experience-copy"><span class="kicker" data-i18n="experienceKicker">THE AIRO FEELING</span><h2 data-i18n-html="experienceTitle">A little more glass.<br><span class="gradient-text">A lot more clarity.</span></h2><p data-i18n="experienceDesc">Inspired by the best of Windows 11 and modern glass design. Rounded surfaces, a floating dock, rich blue light, and thoughtful details give Airo its own identity.</p><div class="chip-row"><span data-i18n="chipOne">Blue by nature</span><span data-i18n="chipTwo">Floating controls</span><span data-i18n="chipThree">Minimal interface</span></div></div><div class="glass-art"><div class="glass-ring"></div><img src="./assets/AiroLogo.png" alt="Airo blue glass logo"></div></div></section>
+
+    <section class="section-shell section-spacing" id="roadmap"><div class="section-heading"><span class="kicker" data-i18n="roadmapKicker">WHAT'S NEXT</span><h2 data-i18n-html="roadmapTitle">This is just<br><span class="gradient-text">the beginning.</span></h2><p data-i18n="roadmapLead">We're building toward a more complete, reliable, and beautiful mirroring experience.</p></div><div class="roadmap-grid">
+      <article class="roadmap-card glass"><span class="roadmap-number">01</span><span class="roadmap-badge current" data-i18n="inProgress">IN PROGRESS</span><h3 data-i18n="road1Title">Airo Beta 0.4</h3><p data-i18n="road1Desc">A refined interface, consistent settings, a floating dock, and polished interactions.</p></article>
+      <article class="roadmap-card glass"><span class="roadmap-number">02</span><span class="roadmap-badge" data-i18n="exploring">EXPLORING</span><h3 data-i18n="road2Title">Smarter mirroring</h3><p data-i18n="road2Desc">More display options, clearer connection feedback, and improved everyday controls.</p></article>
+      <article class="roadmap-card glass"><span class="roadmap-number">03</span><span class="roadmap-badge" data-i18n="longTerm">LONG-TERM GOAL</span><h3 data-i18n="road3Title">Airo 1.0</h3><p data-i18n="road3Desc">Compatibility, stability, accessibility, and a dependable Windows experience.</p></article>
+    </div><p class="roadmap-disclaimer" data-i18n="roadmapNote">The roadmap reflects goals, not guaranteed features or release dates.</p></section>
+
+    <section class="section-shell section-spacing" id="download"><div class="download-card glass"><div class="download-orb"></div><div class="download-copy"><span class="kicker" data-i18n="downloadKicker">READY TO EXPLORE?</span><h2 data-i18n-html="downloadTitle">Bring your screen<br><span class="gradient-text">to Airo.</span></h2><p data-i18n="downloadDesc">Airo is currently a Windows beta. Browse the source, follow development, or get a build artifact from GitHub Actions when available.</p><div class="download-actions"><a class="button button-primary" href="https://github.com/alonweizzz/Airo/actions" target="_blank" rel="noopener noreferrer"><span data-i18n="downloadBuild">View Windows builds</span><span aria-hidden="true">↗</span></a><a class="button button-secondary" href="https://github.com/alonweizzz/Airo/tree/beta-0.4-ui" target="_blank" rel="noopener noreferrer"><span data-i18n="downloadSource">Explore source code</span></a></div><p class="download-fine" data-i18n="downloadFine">Requires Windows and a separately installed compatible UxPlay receiver. Build availability may vary.</p></div><img class="download-logo" src="./assets/AiroLogo.png" alt="" /></div></section>
+  </main>
+
+  <footer class="footer section-shell"><div class="footer-main"><a class="brand" href="#top"><img src="./assets/AiroLogo.png" alt="" width="34" height="34"><span>Airo<span class="brand-dot">.</span></span></a><span data-i18n="footerTag">Mirror simply. Make it yours.</span></div><div class="footer-bottom"><span>© <span id="year"></span> Airo · <span data-i18n="footerIndependent">Independent open-source project. Not affiliated with Apple.</span></span><a href="https://github.com/alonweizzz/Airo" target="_blank" rel="noopener noreferrer">GitHub ↗</a></div></footer>
+</body>
+</html>
